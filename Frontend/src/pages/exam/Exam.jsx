@@ -1,1 +1,71 @@
-import{useSearchParams,useNavigate}from"react-router-dom";import{ChevronLeft,ChevronRight,Clock3,Sparkles}from"lucide-react";import{questions}from"../../utils/mockData";import useExam from"../../hooks/useExam";import QuestionPalette from"../../components/exam/QuestionPalette";import QuestionCard from"../../components/exam/QuestionCard";import Button from"../../components/common/Button";export default function Exam(){const[p]=useSearchParams(),mode=p.get("mode")==="paper"?"paper":"online",n=useNavigate(),e=useExam(questions);return <div className="exam-shell"><header className="exam-top"><div className="brand"><div className="brand-mark"><Sparkles/></div><strong>Question Funda</strong></div><div className="exam-title"><span>{mode.toUpperCase()} EXAM</span><strong>NEET Biology — Full Mock 01</strong></div><div className="exam-time"><Clock3/>02:41:36<Button variant="secondary" onClick={()=>n(-1)}>Exit</Button></div></header><div className="exam-body"><aside className="question-nav"><h3>Question palette</h3><p>{mode==="online"?"Select an answer for each question.":"Write answers on the physical answer sheet."}</p><QuestionPalette total={180} current={e.index} answers={e.answers} onSelect={()=>{}}/></aside><section className="exam-question"><div className="question-meta">Question {e.index+1} of 180</div><QuestionCard q={e.current} mode={mode} selected={e.answers[e.current.id]} onSelect={e.select}/><div className="exam-nav"><Button variant="secondary" onClick={e.previous}><ChevronLeft/>Previous</Button><Button onClick={e.next}>{e.index===questions.length-1?"Finish":"Next"}<ChevronRight/></Button></div></section></div></div>}
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Clock3, Sparkles } from "lucide-react";
+import { questions } from "../../utils/mockData";
+import useExam from "../../hooks/useExam";
+import QuestionPalette from "../../components/exam/QuestionPalette";
+import QuestionCard from "../../components/exam/QuestionCard";
+import Button from "../../components/common/Button";
+export default function Exam() {
+  const [p] = useSearchParams(),
+    mode = p.get("mode") === "paper" ? "paper" : "online",
+    n = useNavigate(),
+    e = useExam(questions);
+  return (
+    <div className="exam-shell">
+      <header className="exam-top">
+        <div className="brand">
+          <div className="brand-mark">
+            <Sparkles />
+          </div>
+          <strong>Question Funda</strong>
+        </div>
+        <div className="exam-title">
+          <span>{mode.toUpperCase()} EXAM</span>
+          <strong>NEET Biology — Full Mock 01</strong>
+        </div>
+        <div className="exam-time">
+          <Clock3 />
+          02:41:36
+          <Button variant="secondary" onClick={() => n(-1)}>
+            Exit
+          </Button>
+        </div>
+      </header>
+      <div className="exam-body">
+        <aside className="question-nav">
+          <h3>Question palette</h3>
+          <p>
+            {mode === "online"
+              ? "Select an answer for each question."
+              : "Write answers on the physical answer sheet."}
+          </p>
+          <QuestionPalette
+            total={180}
+            current={e.index}
+            answers={e.answers}
+            onSelect={() => {}}
+          />
+        </aside>
+        <section className="exam-question">
+          <div className="question-meta">Question {e.index + 1} of 180</div>
+          <QuestionCard
+            q={e.current}
+            mode={mode}
+            selected={e.answers[e.current.id]}
+            onSelect={e.select}
+          />
+          <div className="exam-nav">
+            <Button variant="secondary" onClick={e.previous}>
+              <ChevronLeft />
+              Previous
+            </Button>
+            <Button onClick={e.next}>
+              {e.index === questions.length - 1 ? "Finish" : "Next"}
+              <ChevronRight />
+            </Button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
