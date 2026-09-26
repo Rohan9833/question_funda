@@ -1,0 +1,1 @@
+import{useState}from"react";export default function useExam(q=[]){const[index,setIndex]=useState(0),[answers,setAnswers]=useState({});const current=q[index];return{index,current,answers,select:v=>setAnswers(a=>({...a,[current.id]:v})),next:()=>setIndex(i=>Math.min(i+1,q.length-1)),previous:()=>setIndex(i=>Math.max(0,i-1))}}
