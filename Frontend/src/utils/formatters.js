@@ -1,0 +1,1 @@
+export const formatNumber=n=>new Intl.NumberFormat("en-IN").format(n);export const formatDuration=m=>m>=60?Math.floor(m/60)+"h "+m%60+"m":m+" min"

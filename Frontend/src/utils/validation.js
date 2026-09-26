@@ -1,0 +1,1 @@
+export const isExcelFile=f=>!!f&&/\.(xlsx|xls)$/i.test(f.name)

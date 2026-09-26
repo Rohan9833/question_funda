@@ -1,0 +1,1 @@
+export default function QuestionPalette({total,current,answers,onSelect}){return <div className="palette">{Array.from({length:Math.min(total,30)},(_,i)=><button key={i} className={i===current?"current":answers[i]!=null?"done":""} onClick={()=>onSelect(i)}>{i+1}</button>)}</div>}

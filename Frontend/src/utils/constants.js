@@ -1,0 +1,1 @@
+export const ROLES={TEACHER:"teacher",STUDENT:"student"};export const EXAM_MODES={ONLINE:"online",PAPER:"paper"};export const SUBJECTS=["Biology","Physics","Chemistry"];

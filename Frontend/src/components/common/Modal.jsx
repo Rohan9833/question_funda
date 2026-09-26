@@ -1,0 +1,1 @@
+import{X}from"lucide-react";export default function Modal({title,children,onClose}){return <div className="modal-backdrop"><div className="modal"><header className="modal-head"><h2>{title}</h2><button className="icon-btn" onClick={onClose}><X/></button></header>{children}</div></div>}
