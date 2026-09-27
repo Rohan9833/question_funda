@@ -4,7 +4,7 @@ import {
   papers as seedPapers,
   exams as seedExams,
 } from "../utils/mockData";
-import { questionPapersApi, questionsApi } from "../api/questions.api";
+import { examsApi, questionPapersApi, questionsApi } from "../api/questions.api";
 import { useAuth } from "./AuthContext";
 
 const C = createContext(null);
@@ -52,12 +52,53 @@ export function DataProvider({ children }) {
   const [papers, setPapers] = useState(() =>
     read("qf_papers", seedPapers)
   );
-  const [exams, setExams] = useState(() =>
-    read("qf_exams", seedExams)
-  );
+  const [exams, setExams] = useState([]);
   const [results, setResults] = useState(() =>
     read("qf_results", [])
   );
+
+  const refreshExams = async () => {
+    try {
+      const response = await examsApi.list();
+      const serverExams = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+      const mapped = serverExams.map((exam) => ({
+        id: exam._id,
+        examId: exam._id,
+        name: exam.name,
+        questions: Number(exam.questions) || 0,
+        duration: Number(exam.duration) || 60,
+        marks: Number(exam.marks) || 0,
+        modes: exam.modes || [],
+        students: Number(exam.students) || 0,
+        status: exam.status || "Draft",
+        questionPaperId: exam.questionPaperId,
+      }));
+
+      setExams(mapped);
+      return mapped;
+    } catch (error) {
+      console.warn("Could not load exams from API:", error.message);
+      return exams;
+    }
+  };
+
+  const refreshResults = async () => {
+    try {
+      const response = await examsApi.results();
+      const serverResults = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+      setResults(serverResults);
+      return serverResults;
+    } catch (error) {
+      console.warn("Could not load results from API:", error.message);
+      return results;
+    }
+  };
 
   const refreshQuestions = async () => {
     try {
@@ -95,6 +136,10 @@ export function DataProvider({ children }) {
     if (user?.role === "teacher") {
       refreshQuestions();
       refreshPapers();
+      refreshExams();
+      if (user.role === "student") {
+        refreshResults();
+      }
     }
   }, [user?.id, user?.role]);
 
@@ -136,21 +181,39 @@ export function DataProvider({ children }) {
 
     setPapers((current) => [createdPaper, ...current]);
 
-    setExams((current) => [
-      {
-        ...createdPaper,
-        examId: "exam-" + Date.now(),
-        students: 0,
-        marks: createdPaper.questions * 4,
-      },
-      ...current,
-    ]);
-
     return createdPaper;
   };
 
   const addResult = (result) =>
     setResults((current) => [result, ...current]);
+
+  const addExam = async (cfg) => {
+    const response = await examsApi.create(cfg);
+    const exam = response.data.data;
+
+    const mapped = {
+      id: exam._id,
+      examId: exam._id,
+      name: exam.name,
+      questions: Number(exam.questions) || 0,
+      duration: Number(exam.duration) || 60,
+      marks: Number(exam.marks) || 0,
+      modes: exam.modes || [],
+      students: Number(exam.students) || 0,
+      status: exam.status || "Draft",
+      questionPaperId: exam.questionPaperId,
+    };
+
+    setExams((current) => [mapped, ...current]);
+    return mapped;
+  };
+
+  const submitExam = async (examId, answers) => {
+    const response = await examsApi.submit(examId, { answers });
+    const result = response.data.data;
+    setResults((current) => [result, ...current]);
+    return result;
+  };
 
   const resetData = () => {
     setQuestions(seedQuestions);
@@ -169,7 +232,11 @@ export function DataProvider({ children }) {
         addQuestions,
         refreshQuestions,
         refreshPapers,
+        refreshExams,
+        refreshResults,
         addPaper,
+        addExam,
+        submitExam,
         addResult,
         resetData,
       }}
