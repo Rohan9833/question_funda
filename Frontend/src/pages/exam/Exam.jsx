@@ -8,8 +8,9 @@ import QuestionPalette from "../../components/exam/QuestionPalette";
 import QuestionCard from "../../components/exam/QuestionCard";
 import Button from "../../components/common/Button";
 
-const mapQuestion = (question) => ({
+const mapQuestion = (question, index) => ({
   id: question._id,
+  number: index + 1,
   text: question.text,
   options: (question.options || []).map((option) => option.text),
 });
