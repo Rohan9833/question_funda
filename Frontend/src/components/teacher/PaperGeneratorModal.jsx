@@ -5,6 +5,8 @@ import { useData } from "../../context/DataContext";
 
 export default function PaperGeneratorModal({ onClose }) {
   const { questions, addPaper } = useData();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const subjects = useMemo(() => {
     const uniqueSubjects = new Set(
@@ -14,13 +16,13 @@ export default function PaperGeneratorModal({ onClose }) {
     return Array.from(uniqueSubjects).sort();
   }, [questions]);
 
-  const [cfg, setCfg] = useState(() => ({
+  const [cfg, setCfg] = useState({
     name: "NEET Biology — Practice Test 05",
-    subject: subjects[0] || "",
+    subject: "",
     chapters: [],
     count: 50,
     duration: 60,
-  }));
+  });
 
   const getChaptersForSubject = (subject) => {
     if (!subject || subject === "Mixed") return [];
@@ -41,7 +43,12 @@ export default function PaperGeneratorModal({ onClose }) {
   );
 
   useEffect(() => {
-    if (!cfg.subject && subjects.length) {
+    if (!subjects.length) return;
+
+    const currentSubjectExists =
+      cfg.subject === "Mixed" || subjects.includes(cfg.subject);
+
+    if (!currentSubjectExists) {
       const firstSubject = subjects[0];
 
       setCfg((current) => ({
@@ -54,6 +61,8 @@ export default function PaperGeneratorModal({ onClose }) {
 
   const change = (event) => {
     const { name, value } = event.target;
+
+    setError("");
 
     if (name === "subject") {
       setCfg((current) => ({
@@ -71,6 +80,8 @@ export default function PaperGeneratorModal({ onClose }) {
   };
 
   const toggleChapter = (chapter) => {
+    setError("");
+
     setCfg((current) => ({
       ...current,
       chapters: current.chapters.includes(chapter)
@@ -79,22 +90,45 @@ export default function PaperGeneratorModal({ onClose }) {
     }));
   };
 
-  const generate = () => {
-    addPaper(cfg);
-    onClose();
+  const generate = async () => {
+    setError("");
+    setSaving(true);
+
+    try {
+      await addPaper(cfg);
+      onClose();
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          requestError.message ||
+          "Could not generate the question paper."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Modal title="Generate question paper" onClose={onClose}>
+    <Modal title="Generate question paper" onClose={saving ? undefined : onClose}>
       <div className="form-grid">
         <label>
           Paper name
-          <input name="name" value={cfg.name} onChange={change} />
+          <input
+            name="name"
+            value={cfg.name}
+            onChange={change}
+            disabled={saving}
+          />
         </label>
 
         <label>
           Subject
-          <select name="subject" value={cfg.subject} onChange={change}>
+          <select
+            name="subject"
+            value={cfg.subject}
+            onChange={change}
+            disabled={saving}
+          >
             {!subjects.length && <option value="">No subjects available</option>}
             {subjects.map((subject) => (
               <option key={subject} value={subject}>
@@ -113,6 +147,7 @@ export default function PaperGeneratorModal({ onClose }) {
             min="1"
             value={cfg.count}
             onChange={change}
+            disabled={saving}
           />
         </label>
 
@@ -124,6 +159,7 @@ export default function PaperGeneratorModal({ onClose }) {
             min="1"
             value={cfg.duration}
             onChange={change}
+            disabled={saving}
           />
         </label>
       </div>
@@ -137,6 +173,7 @@ export default function PaperGeneratorModal({ onClose }) {
                   type="checkbox"
                   checked={cfg.chapters.includes(chapter)}
                   onChange={() => toggleChapter(chapter)}
+                  disabled={saving}
                 />
                 {chapter}
               </label>
@@ -155,11 +192,19 @@ export default function PaperGeneratorModal({ onClose }) {
         </div>
       )}
 
+      {error && (
+        <div role="alert">
+          {error}
+        </div>
+      )}
+
       <div className="modal-footer">
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="ghost" onClick={onClose} disabled={saving}>
           Cancel
         </Button>
-        <Button onClick={generate}>Generate paper</Button>
+        <Button onClick={generate} disabled={saving || !cfg.subject}>
+          {saving ? "Generating..." : "Generate paper"}
+        </Button>
       </div>
     </Modal>
   );
