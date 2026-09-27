@@ -33,9 +33,11 @@ app.get("/", (req, res) => {
 
 const authRoutes = require("./routes/auth.routes");
 const questionRoutes = require("./routes/question.routes");
+const questionPaperRoutes = require("./routes/questionPaper.routes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/questions", questionRoutes);
+app.use("/api/question-papers", questionPaperRoutes);
 
 // ==========================================
 // 404 HANDLER
