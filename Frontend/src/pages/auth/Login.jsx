@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { GraduationCap, Users, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -27,7 +27,7 @@ export default function Login() {
 
       if (user.role !== role) {
         setError(`This account is registered as a ${user.role}. Please select ${user.role}.`);
-        await useAuth;
+        await logout();
         return;
       }
 
@@ -81,6 +81,7 @@ export default function Login() {
             {submitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
+        <div className="auth-switch">Do not have an account? <Link to="/signup">Create one</Link></div>
       </section>
     </div>
   );
