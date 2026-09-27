@@ -120,6 +120,7 @@ const createQuestionPaper = async (req, res, next) => {
     const paper = await QuestionPaper.create({
       name: paperName,
       subject: paperSubject,
+      chapters: paperSubject === "Mixed" ? [] : chapterNames,
       questionIds: selectedQuestions.map((question) => question._id),
       questions: selectedQuestions.length,
       duration: paperDuration,
