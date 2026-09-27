@@ -1,6 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { questions as seedQuestions, papers as seedPapers, exams as seedExams } from "../utils/mockData";
-import { questionsApi } from "../api/questions.api";
+import {
+  questions as seedQuestions,
+  papers as seedPapers,
+  exams as seedExams,
+} from "../utils/mockData";
+import { questionPapersApi, questionsApi } from "../api/questions.api";
 import { useAuth } from "./AuthContext";
 
 const C = createContext(null);
@@ -25,6 +29,17 @@ const mapQuestion = (question) => ({
   subject: question.subjectId?.name || "General",
   chapter: question.chapterId?.name || "General",
   difficulty: question.difficulty || "Medium",
+});
+
+const mapPaper = (paper) => ({
+  id: paper._id,
+  name: paper.name,
+  questions: Number(paper.questions) || 0,
+  duration: Number(paper.duration) || 60,
+  status: paper.status || "Draft",
+  modes: paper.modes || ["Online", "Paper"],
+  questionIds: paper.questionIds || [],
+  subject: paper.subject || "Mixed",
 });
 
 export function DataProvider({ children }) {
@@ -59,9 +74,26 @@ export function DataProvider({ children }) {
     }
   };
 
+  const refreshPapers = async () => {
+    try {
+      const response = await questionPapersApi.list();
+      const serverPapers = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+      const mapped = serverPapers.map(mapPaper);
+      setPapers(mapped);
+      return mapped;
+    } catch (error) {
+      console.warn("Could not load question papers from API:", error.message);
+      return papers;
+    }
+  };
+
   useEffect(() => {
     if (user?.role === "teacher") {
       refreshQuestions();
+      refreshPapers();
     }
   }, [user?.id, user?.role]);
 
@@ -90,46 +122,30 @@ export function DataProvider({ children }) {
       })),
     ]);
 
-  const addPaper = (cfg) => {
-    const id = "p-" + Date.now();
-    const selected = questions
-      .filter((q) => {
-        const matchesSubject =
-          cfg.subject === "Mixed" || q.subject === cfg.subject;
-
-        if (!matchesSubject) return false;
-
-        if (cfg.subject === "Mixed" || !cfg.chapters?.length) {
-          return true;
-        }
-
-        return cfg.chapters.includes(q.chapter);
-      })
-      .slice(0, Number(cfg.count) || 10);
-
-    const paper = {
-      id,
+  const addPaper = async (cfg) => {
+    const response = await questionPapersApi.create({
       name: cfg.name,
-      questions: selected.length,
-      duration: Number(cfg.duration) || 60,
-      status: "Draft",
-      modes: ["Online", "Paper"],
-      questionIds: selected.map((q) => q.id),
       subject: cfg.subject,
-    };
+      chapters: cfg.chapters || [],
+      count: Number(cfg.count),
+      duration: Number(cfg.duration),
+    });
 
-    setPapers((current) => [paper, ...current]);
+    const createdPaper = mapPaper(response.data.data);
+
+    setPapers((current) => [createdPaper, ...current]);
+
     setExams((current) => [
       {
-        ...paper,
+        ...createdPaper,
         examId: "exam-" + Date.now(),
         students: 0,
-        marks: selected.length * 4,
+        marks: createdPaper.questions * 4,
       },
       ...current,
     ]);
 
-    return paper;
+    return createdPaper;
   };
 
   const addResult = (result) =>
@@ -151,6 +167,7 @@ export function DataProvider({ children }) {
         results,
         addQuestions,
         refreshQuestions,
+        refreshPapers,
         addPaper,
         addResult,
         resetData,
