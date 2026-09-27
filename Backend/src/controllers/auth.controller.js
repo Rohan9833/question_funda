@@ -1,7 +1,7 @@
-const User = require("../../models/User");
-const StudentProfile = require("../../models/StudentProfile");
-const TeacherProfile = require("../../models/TeacherProfile");
-const Session = require("../../models/Session");
+const User = require("../models/User");
+const StudentProfile = require("../models/StudentProfile");
+const TeacherProfile = require("../models/TeacherProfile");
+const Session = require("../models/Session");
 const {
   REFRESH_TOKEN_TTL_MS,
   hashPassword,
