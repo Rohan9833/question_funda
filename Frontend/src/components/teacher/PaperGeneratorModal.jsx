@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
 import { useData } from "../../context/DataContext";
@@ -22,18 +22,35 @@ export default function PaperGeneratorModal({ onClose }) {
     duration: 60,
   }));
 
-  const chapters = useMemo(() => {
-    if (!cfg.subject || cfg.subject === "Mixed") return [];
+  const getChaptersForSubject = (subject) => {
+    if (!subject || subject === "Mixed") return [];
 
     const uniqueChapters = new Set(
       questions
-        .filter((question) => question.subject === cfg.subject)
+        .filter((question) => question.subject === subject)
         .map((question) => question.chapter)
         .filter(Boolean)
     );
 
     return Array.from(uniqueChapters).sort();
-  }, [questions, cfg.subject]);
+  };
+
+  const chapters = useMemo(
+    () => getChaptersForSubject(cfg.subject),
+    [questions, cfg.subject]
+  );
+
+  useEffect(() => {
+    if (!cfg.subject && subjects.length) {
+      const firstSubject = subjects[0];
+
+      setCfg((current) => ({
+        ...current,
+        subject: firstSubject,
+        chapters: getChaptersForSubject(firstSubject),
+      }));
+    }
+  }, [subjects, cfg.subject, questions]);
 
   const change = (event) => {
     const { name, value } = event.target;
@@ -42,7 +59,7 @@ export default function PaperGeneratorModal({ onClose }) {
       setCfg((current) => ({
         ...current,
         subject: value,
-        chapters: [],
+        chapters: getChaptersForSubject(value),
       }));
       return;
     }
