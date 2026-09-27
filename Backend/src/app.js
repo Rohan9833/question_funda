@@ -31,10 +31,9 @@ app.get("/", (req, res) => {
 // ROUTES
 // ==========================================
 
-// Routes will be added here later.
-// Example:
-// app.use("/api/auth", authRoutes);
-// app.use("/api/questions", questionRoutes);
+const authRoutes = require("./routes/auth.routes");
+
+app.use("/api/auth", authRoutes);
 
 // ==========================================
 // 404 HANDLER
