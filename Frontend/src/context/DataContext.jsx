@@ -40,6 +40,7 @@ const mapPaper = (paper) => ({
   modes: paper.modes || ["Online", "Paper"],
   questionIds: paper.questionIds || [],
   subject: paper.subject || "Mixed",
+  chapters: paper.chapters || [],
 });
 
 export function DataProvider({ children }) {
