@@ -3,6 +3,7 @@ import { useAuth } from "./context/AuthContext";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Login from "./pages/auth/Login";
+import Signup from "./pages/auth/Signup";
 import Profile from "./pages/auth/Profile";
 import TD from "./pages/teacher/Dashboard";
 import QB from "./pages/teacher/QuestionBank";
@@ -21,6 +22,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
