@@ -3,6 +3,7 @@ import { useAuth } from "./context/AuthContext";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import Login from "./pages/auth/Login";
+import Profile from "./pages/auth/Profile";
 import TD from "./pages/teacher/Dashboard";
 import QB from "./pages/teacher/QuestionBank";
 import QP from "./pages/teacher/QuestionPapers";
@@ -13,13 +14,18 @@ import SD from "./pages/student/Dashboard";
 import AE from "./pages/student/AvailableExams";
 import SR from "./pages/student/Results";
 import Exam from "./pages/exam/Exam";
+
 export default function App() {
   const { user } = useAuth();
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
+          <Route path="/profile" element={<Profile />} />
+
           {user?.role === "teacher" ? (
             <>
               <Route
@@ -45,8 +51,10 @@ export default function App() {
             </>
           )}
         </Route>
+
         <Route path="/exam/:id" element={<Exam />} />
       </Route>
+
       <Route
         path="/"
         element={
