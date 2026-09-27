@@ -7,18 +7,29 @@ export default function Profile() {
   const { user, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const saveProfile = (event) => {
+  const saveProfile = async (event) => {
     event.preventDefault();
-
     const trimmedName = name.trim();
 
     if (!trimmedName) {
+      setError("Name is required.");
       return;
     }
 
-    updateProfile({ name: trimmedName });
-    navigate(-1);
+    try {
+      setSaving(true);
+      setError("");
+      await updateProfile({ name: trimmedName, phone: phone.trim() });
+      navigate(-1);
+    } catch (saveError) {
+      setError(saveError.message || "Unable to update profile.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -27,45 +38,24 @@ export default function Profile() {
         <div>
           <div className="eyebrow">Account</div>
           <h1>Edit profile</h1>
-          <p>Update the name shown across your Question Funda workspace.</p>
+          <p>Update the details shown across your Question Funda workspace.</p>
         </div>
       </div>
 
       <div className="profile-page-card">
-        <div className="profile-page-avatar">
-          <UserRound size={26} />
-        </div>
+        <div className="profile-page-avatar"><UserRound size={26} /></div>
 
         <form className="profile-form" onSubmit={saveProfile}>
-          <label>
-            Name
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Enter your name"
-              autoComplete="name"
-            />
-          </label>
+          <label>Name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Enter your name" autoComplete="name" /></label>
+          <label>Email<input value={user?.email || ""} readOnly /></label>
+          <label>Phone<input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Enter your phone number" autoComplete="tel" /></label>
+          <label>Role<input value={user?.role || ""} readOnly /></label>
 
-          <label>
-            Role
-            <input value={user?.role || ""} readOnly />
-          </label>
+          {error && <div className="login-error">{error}</div>}
 
           <div className="profile-form-actions">
-            <button
-              className="btn secondary"
-              type="button"
-              onClick={() => navigate(-1)}
-            >
-              <ArrowLeft size={15} />
-              Cancel
-            </button>
-
-            <button className="btn primary" type="submit">
-              <Save size={15} />
-              Save changes
-            </button>
+            <button className="btn secondary" type="button" onClick={() => navigate(-1)}><ArrowLeft size={15} />Cancel</button>
+            <button className="btn primary" type="submit" disabled={saving}><Save size={15} />{saving ? "Saving..." : "Save changes"}</button>
           </div>
         </form>
       </div>
