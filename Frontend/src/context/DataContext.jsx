@@ -137,9 +137,11 @@ export function DataProvider({ children }) {
       refreshQuestions();
       refreshPapers();
       refreshExams();
-      if (user.role === "student") {
-        refreshResults();
-      }
+    }
+
+    if (user?.role === "student") {
+      refreshExams();
+      refreshResults();
     }
   }, [user?.id, user?.role]);
 
