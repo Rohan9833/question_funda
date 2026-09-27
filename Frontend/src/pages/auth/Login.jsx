@@ -4,7 +4,7 @@ import { GraduationCap, Users, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const nav = useNavigate();
   const [role, setRole] = useState("student");
   const [email, setEmail] = useState("");
