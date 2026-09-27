@@ -1,1 +1,6 @@
-import client from"./client";export const papersApi={list:()=>client.get("/papers"),create:d=>client.post("/papers",d),get:id=>client.get("/papers/"+id)}
+import client from "./client";
+export const papersApi = {
+  list: () => client.get("/papers"),
+  create: (d) => client.post("/papers", d),
+  get: (id) => client.get("/papers/" + id),
+};

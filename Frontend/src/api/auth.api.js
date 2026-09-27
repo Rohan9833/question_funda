@@ -1,1 +1,5 @@
-import client from"./client";export const authApi={login:d=>client.post("/auth/login",d),me:()=>client.get("/auth/me")}
+import client from "./client";
+export const authApi = {
+  login: (d) => client.post("/auth/login", d),
+  me: () => client.get("/auth/me"),
+};

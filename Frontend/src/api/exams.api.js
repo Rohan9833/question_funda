@@ -1,1 +1,6 @@
-import client from"./client";export const examsApi={list:()=>client.get("/exams"),get:id=>client.get("/exams/"+id),submit:(id,d)=>client.post("/exams/"+id+"/submit",d)}
+import client from "./client";
+export const examsApi = {
+  list: () => client.get("/exams"),
+  get: (id) => client.get("/exams/" + id),
+  submit: (id, d) => client.post("/exams/" + id + "/submit", d),
+};
