@@ -7,7 +7,7 @@ const sessionSchema = new mongoose.Schema(
     device: { type: String, default: "" },
     userAgent: { type: String, default: "" },
     ipAddress: { type: String, default: "" },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
     lastUsedAt: { type: Date, default: Date.now },
     revokedAt: { type: Date, default: null },
   },
