@@ -1,6 +1,5 @@
-const BASE_URL = (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, "");
-const API_BASE = BASE_URL.endsWith("/api") ? BASE_URL : `${BASE_URL}/api`;
-const AUTH_BASE = `${API_BASE}/auth`;
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const AUTH_BASE = `${BASE_URL}/api/auth`;
 
 const getAccessToken = () => localStorage.getItem("qf_access_token");
 const getRefreshToken = () => localStorage.getItem("qf_refresh_token");
