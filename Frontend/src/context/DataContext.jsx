@@ -46,15 +46,13 @@ export function DataProvider({ children }) {
   const refreshQuestions = async () => {
     try {
       const response = await questionsApi.list();
-      const serverQuestions = response.data || [];
+      const serverQuestions = Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
 
-      if (serverQuestions.length) {
-        const mapped = serverQuestions.map(mapQuestion);
-        setQuestions(mapped);
-        return mapped;
-      }
-
-      return questions;
+      const mapped = serverQuestions.map(mapQuestion);
+      setQuestions(mapped);
+      return mapped;
     } catch (error) {
       console.warn("Could not load questions from API:", error.message);
       return questions;
