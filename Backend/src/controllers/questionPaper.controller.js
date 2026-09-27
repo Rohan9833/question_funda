@@ -1,7 +1,22 @@
 const Question = require("../models/Question");
 const QuestionPaper = require("../models/QuestionPaper");
+const Subject = require("../models/Subject");
+const Chapter = require("../models/Chapter");
 
 const text = (value) => String(value ?? "").trim();
+
+const normalizeName = (value) =>
+  text(value).toLowerCase().replace(/\s+/g, " ");
+
+const getSubjectIdsForName = async (name) => {
+  const subject = await Subject.findOne({
+    normalizedName: normalizeName(name),
+  })
+    .select("_id")
+    .lean();
+
+  return subject ? [subject._id] : [];
+};
 
 const createQuestionPaper = async (req, res, next) => {
   try {
@@ -53,29 +68,25 @@ const createQuestionPaper = async (req, res, next) => {
       });
     }
 
-    const chapterNames = chapters
-      .map(text)
-      .filter(Boolean);
-
+    const chapterNames = chapters.map(text).filter(Boolean);
     const filter = {};
 
     if (paperSubject !== "Mixed") {
-      filter.subjectId = {
-        $in: await getSubjectIdsForName(paperSubject),
-      };
+      const subjectIds = await getSubjectIdsForName(paperSubject);
 
-      if (!filter.subjectId.$in.length) {
+      if (!subjectIds.length) {
         return res.status(400).json({
           success: false,
           message: "No questions found for the selected subject.",
         });
       }
 
+      filter.subjectId = { $in: subjectIds };
+
       if (chapterNames.length) {
-        const Chapter = require("../models/Chapter");
         const chaptersFromDb = await Chapter.find({
-          subjectId: { $in: filter.subjectId.$in },
-          name: { $in: chapterNames },
+          subjectId: { $in: subjectIds },
+          normalizedName: { $in: chapterNames.map(normalizeName) },
         })
           .select("_id")
           .lean();
@@ -126,21 +137,6 @@ const createQuestionPaper = async (req, res, next) => {
     next(error);
   }
 };
-
-const getSubjectIdsForName = async (name) => {
-  const Subject = require("../models/Subject");
-
-  const subject = await Subject.findOne({
-    name: { $regex: new RegExp(`^${escapeRegex(name)}$`, "i") },
-  })
-    .select("_id")
-    .lean();
-
-  return subject ? [subject._id] : [];
-};
-
-const escapeRegex = (value) =>
-  value.replace(/[.*+?^\\${}()|[\\]\\]/g, "\\$&");
 
 const listQuestionPapers = async (req, res, next) => {
   try {
