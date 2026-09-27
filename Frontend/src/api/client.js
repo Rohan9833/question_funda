@@ -1,10 +1,17 @@
 import axios from "axios";
+
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
 });
-client.interceptors.request.use((c) => {
-  const u = JSON.parse(localStorage.getItem("qf_user") || "null");
-  if (u?.id) c.headers["X-User-Id"] = u.id;
-  return c;
+
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem("qf_access_token");
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
+
 export default client;
