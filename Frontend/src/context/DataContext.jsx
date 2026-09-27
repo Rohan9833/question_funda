@@ -93,7 +93,18 @@ export function DataProvider({ children }) {
   const addPaper = (cfg) => {
     const id = "p-" + Date.now();
     const selected = questions
-      .filter((q) => cfg.subject === "Mixed" || q.subject === cfg.subject)
+      .filter((q) => {
+        const matchesSubject =
+          cfg.subject === "Mixed" || q.subject === cfg.subject;
+
+        if (!matchesSubject) return false;
+
+        if (cfg.subject === "Mixed" || !cfg.chapters?.length) {
+          return true;
+        }
+
+        return cfg.chapters.includes(q.chapter);
+      })
       .slice(0, Number(cfg.count) || 10);
 
     const paper = {
