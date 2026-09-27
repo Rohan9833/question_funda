@@ -12,3 +12,11 @@ export const questionPapersApi = {
   list: () => client.get("/question-papers"),
   create: (data) => client.post("/question-papers", data),
 };
+
+export const examsApi = {
+  list: () => client.get("/exams"),
+  create: (data) => client.post("/exams", data),
+  get: (id) => client.get(`/exams/${id}`),
+  submit: (id, data) => client.post(`/exams/${id}/submit`, data),
+  results: () => client.get("/exams/results/me"),
+};
