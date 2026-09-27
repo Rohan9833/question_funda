@@ -1,81 +1,49 @@
-const BASE_URL = import.meta.env.VITE_BASE_URL;
-const AUTH_BASE = `${BASE_URL}/api/auth`;
+import client from "./client";
 
-const getAccessToken = () => localStorage.getItem("qf_access_token");
 const getRefreshToken = () => localStorage.getItem("qf_refresh_token");
 
-const request = async (path, options = {}, authenticated = false) => {
-  const token = getAccessToken();
-
-  const response = await fetch(`${AUTH_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(authenticated && token
-        ? { Authorization: `Bearer ${token}` }
-        : {}),
-      ...(options.headers || {}),
-    },
+export const loginApi = async (email, password, device = "web") => {
+  const response = await client.post("/auth/login", {
+    email,
+    password,
+    device,
   });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.message || "Request failed");
-  }
-
-  return data;
+  return response.data;
 };
 
-export const loginApi = (email, password, device = "web") =>
-  request("/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password, device }),
+export const registerApi = async (payload) => {
+  const response = await client.post("/auth/register", payload);
+  return response.data;
+};
+
+export const refreshApi = async (refreshToken = getRefreshToken()) => {
+  const response = await client.post("/auth/refresh", {
+    refreshToken,
   });
+  return response.data;
+};
 
-export const registerApi = (payload) =>
-  request("/register", {
-    method: "POST",
-    body: JSON.stringify(payload),
+export const meApi = async () => {
+  const response = await client.get("/auth/me");
+  return response.data;
+};
+
+export const logoutApi = async (refreshToken = getRefreshToken()) => {
+  const response = await client.post("/auth/logout", {
+    refreshToken,
   });
+  return response.data;
+};
 
-export const refreshApi = (refreshToken = getRefreshToken()) =>
-  request("/refresh", {
-    method: "POST",
-    body: JSON.stringify({ refreshToken }),
-  });
+export const logoutAllApi = async () => {
+  const response = await client.post("/auth/logout-all", {});
+  return response.data;
+};
 
-export const meApi = () => request("/me", {}, true);
-
-export const logoutApi = (refreshToken = getRefreshToken()) =>
-  request(
-    "/logout",
-    {
-      method: "POST",
-      body: JSON.stringify({ refreshToken }),
-    },
-    true
-  );
-
-export const logoutAllApi = () =>
-  request(
-    "/logout-all",
-    {
-      method: "POST",
-      body: JSON.stringify({}),
-    },
-    true
-  );
-
-export const updateProfileApi = (payload) =>
-  request(
-    "/profile",
-    {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    },
-    true
-  );
+export const updateProfileApi = async (payload) => {
+  const response = await client.put("/auth/profile", payload);
+  return response.data;
+};
 
 // Backward-compatible object API for existing imports.
 export const authApi = {
