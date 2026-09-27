@@ -4,6 +4,10 @@ const questionPaperSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     subject: { type: String, required: true, trim: true },
+    chapters: {
+      type: [String],
+      default: [],
+    },
     questionIds: [
       {
         type: mongoose.Schema.Types.ObjectId,
