@@ -102,6 +102,7 @@ const getTeacherStudents = async (req, res, next) => {
           averagePercent: 0,
           totalScore: 0,
           totalMarks: 0,
+          totalPercent: 0,
           lastActiveAt: attempt.createdAt,
           examNames: new Set(),
         });
@@ -112,6 +113,7 @@ const getTeacherStudents = async (req, res, next) => {
       student.attempts += 1;
       student.totalScore += Number(attempt.score) || 0;
       student.totalMarks += Number(attempt.total) || 0;
+      student.totalPercent += Number(attempt.percent) || 0;
       student.examNames.add(
         examMap.get(String(attempt.examId)) || "Exam"
       );
@@ -128,17 +130,7 @@ const getTeacherStudents = async (req, res, next) => {
       ...student,
       examsCompleted: student.examNames.size,
       averagePercent: student.attempts
-        ? Math.round(
-            Array.from(
-              attempts
-                .filter(
-                  (attempt) =>
-                    String(attempt.studentId?._id) === student.id
-                )
-                .map((attempt) => Number(attempt.percent) || 0)
-            ).reduce((sum, percent) => sum + percent, 0) /
-              student.attempts
-          )
+        ? Math.round(student.totalPercent / student.attempts)
         : 0,
       averageScore: student.totalMarks
         ? Math.round((student.totalScore / student.totalMarks) * 100)
