@@ -35,11 +35,13 @@ const authRoutes = require("./routes/auth.routes");
 const questionRoutes = require("./routes/question.routes");
 const questionPaperRoutes = require("./routes/questionPaper.routes");
 const examRoutes = require("./routes/exam.routes");
+const studentRoutes = require("./routes/student.routes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/question-papers", questionPaperRoutes);
 app.use("/api/exams", examRoutes);
+app.use("/api/students", studentRoutes);
 
 // ==========================================
 // 404 HANDLER
