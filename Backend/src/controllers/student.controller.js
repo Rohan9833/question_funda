@@ -1,4 +1,5 @@
 const Exam = require("../models/Exam");
+const User = require("../models/User");
 const ExamAttempt = require("../models/ExamAttempt");
 const StudentProfile = require("../models/StudentProfile");
 
@@ -263,13 +264,7 @@ const getStudentDashboard = async (req, res, next) => {
     );
 
     const correctAnswers = attempts.reduce(
-      (sum, attempt) =>
-        sum +
-        Math.round(
-          ((Number(attempt.percent) || 0) / 100) *
-            (Number(attempt.total) || 0) /
-            4
-        ),
+      (sum, attempt) => sum + (Number(attempt.score) || 0) / 4,
       0
     );
 
