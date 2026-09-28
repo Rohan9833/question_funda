@@ -175,9 +175,13 @@ export default function Dashboard() {
               className="btn primary"
               type="button"
               style={{ marginTop: 18 }}
-              onClick={() =>
-                navigate(`/exam/${upcomingExam.id}`)
-              }
+              onClick={() => {
+                const mode = upcomingExam.modes?.includes("Online")
+                  ? "online"
+                  : "paper";
+
+                navigate(`/exam/${upcomingExam.id}?mode=${mode}`);
+              }}
             >
               Start exam
             </button>
