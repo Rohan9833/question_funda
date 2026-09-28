@@ -358,4 +358,5 @@ const getStudentDashboard = async (req, res, next) => {
 
 module.exports = {
   getTeacherStudents,
+  getStudentDashboard,
 };
