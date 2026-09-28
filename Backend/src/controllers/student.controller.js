@@ -250,9 +250,7 @@ const getStudentDashboard = async (req, res, next) => {
     const upcomingExam =
       liveExams.find(
         (exam) => !completedExamIds.has(String(exam._id))
-      ) ||
-      liveExams[0] ||
-      null;
+      ) || null;
 
     const totalAttempts = completedAttempts.length;
 
