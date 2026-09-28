@@ -205,6 +205,146 @@ const getTeacherStudents = async (req, res, next) => {
   }
 };
 
+
+const getStudentDashboard = async (req, res, next) => {
+  try {
+    if (req.auth.role !== "student") {
+      return res.status(403).json({
+        success: false,
+        message: "Only students can access the student dashboard.",
+      });
+    }
+
+    const studentId = req.auth.sub;
+
+    const [user, attempts, liveExams] = await Promise.all([
+      require("../models/User")
+        .findById(studentId)
+        .select("name email profileImage isActive")
+        .lean(),
+      ExamAttempt.find({ studentId })
+        .populate("examId", "name questions duration marks status createdBy")
+        .sort({ createdAt: -1 })
+        .lean(),
+      Exam.find({ status: "Live" })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+    ]);
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "Student account is unavailable.",
+      });
+    }
+
+    const totalAttempts = attempts.length;
+    const totalScore = attempts.reduce(
+      (sum, attempt) => sum + (Number(attempt.score) || 0),
+      0
+    );
+    const totalMarks = attempts.reduce(
+      (sum, attempt) => sum + (Number(attempt.total) || 0),
+      0
+    );
+
+    const averagePercent = totalMarks
+      ? Math.round((totalScore / totalMarks) * 100)
+      : 0;
+
+    const solvedQuestions = attempts.reduce(
+      (sum, attempt) =>
+        sum +
+        (attempt.answers || []).filter(
+          (answer) => answer.answer !== null && answer.answer !== undefined
+        ).length,
+      0
+    );
+
+    const correctAnswers = attempts.reduce(
+      (sum, attempt) =>
+        sum +
+        Math.round(
+          ((Number(attempt.percent) || 0) / 100) *
+            (Number(attempt.total) || 0) /
+            4
+        ),
+      0
+    );
+
+    const accuracy = solvedQuestions
+      ? Math.round((correctAnswers / solvedQuestions) * 100)
+      : 0;
+
+    const practiceMinutes = attempts.reduce(
+      (sum, attempt) => sum + (Number(attempt.examId?.duration) || 0),
+      0
+    );
+
+    const weekStart = new Date();
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+
+    const completedThisWeek = attempts.filter(
+      (attempt) => new Date(attempt.createdAt) >= weekStart
+    ).length;
+
+    const completedExamIds = new Set(
+      attempts.map((attempt) => String(attempt.examId?._id)).filter(Boolean)
+    );
+
+    const upcomingExam =
+      liveExams.find((exam) => !completedExamIds.has(String(exam._id))) ||
+      liveExams[0] ||
+      null;
+
+    const recentResults = attempts.slice(0, 5).map((attempt) => ({
+      id: attempt._id,
+      examId: attempt.examId?._id,
+      name: attempt.examId?.name || "Exam",
+      score: Number(attempt.score) || 0,
+      total: Number(attempt.total) || 0,
+      percent: Number(attempt.percent) || 0,
+      createdAt: attempt.createdAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        student: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          profileImage: user.profileImage || "",
+        },
+        upcomingExam: upcomingExam
+          ? {
+              id: upcomingExam._id,
+              name: upcomingExam.name,
+              questions: upcomingExam.questions,
+              duration: upcomingExam.duration,
+              marks: upcomingExam.marks,
+              modes: upcomingExam.modes || [],
+            }
+          : null,
+        stats: {
+          completed: totalAttempts,
+          completedThisWeek,
+          averagePercent,
+          practiceMinutes,
+          solvedQuestions,
+          accuracy,
+        },
+        recentResults,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getTeacherStudents,
+  getStudentDashboard,
 };
