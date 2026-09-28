@@ -116,7 +116,7 @@ export default function Dashboard() {
         title={`Welcome back, ${student.name.split(" ")[0]}.`}
         description="Continue an active exam or review your recent performance."
         actions={
-          <div className="head-actions">
+          <>
             <Button
               variant="secondary"
               type="button"
@@ -130,7 +130,7 @@ export default function Dashboard() {
               <GraduationCap size={15} />
               View exams
             </Button>
-          </div>
+          </>
         }
       />
 
