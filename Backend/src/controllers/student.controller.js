@@ -1,6 +1,7 @@
 const Exam = require("../models/Exam");
 const ExamAttempt = require("../models/ExamAttempt");
 const StudentProfile = require("../models/StudentProfile");
+const User = require("../models/User");
 
 const getTeacherStudents = async (req, res, next) => {
   try {
@@ -198,6 +199,158 @@ const getTeacherStudents = async (req, res, next) => {
           averagePercent,
           activeStudents,
         },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+const getStudentDashboard = async (req, res, next) => {
+  try {
+    if (req.auth.role !== "student") {
+      return res.status(403).json({
+        success: false,
+        message: "Only students can access the student dashboard.",
+      });
+    }
+
+    const studentId = req.auth.sub;
+
+    const [user, profile, attempts, liveExams] = await Promise.all([
+      User.findById(studentId)
+        .select("name email profileImage isActive")
+        .lean(),
+      StudentProfile.findOne({ userId: studentId })
+        .select("studentId standard board schoolName academicYear")
+        .lean(),
+      ExamAttempt.find({ studentId })
+        .populate("examId", "name questions duration marks modes status")
+        .sort({ createdAt: -1 })
+        .lean(),
+      Exam.find({ status: "Live" })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "Student account is unavailable.",
+      });
+    }
+
+    const completedAttempts = attempts.filter((attempt) => attempt.examId);
+    const completedExamIds = new Set(
+      completedAttempts.map((attempt) => String(attempt.examId._id))
+    );
+
+    const upcomingExam =
+      liveExams.find(
+        (exam) => !completedExamIds.has(String(exam._id))
+      ) ||
+      liveExams[0] ||
+      null;
+
+    const totalAttempts = completedAttempts.length;
+
+    const totalScore = completedAttempts.reduce(
+      (sum, attempt) => sum + (Number(attempt.score) || 0),
+      0
+    );
+
+    const totalMarks = completedAttempts.reduce(
+      (sum, attempt) => sum + (Number(attempt.total) || 0),
+      0
+    );
+
+    const averagePercent = totalMarks
+      ? Math.round((totalScore / totalMarks) * 100)
+      : 0;
+
+    const solvedQuestions = completedAttempts.reduce(
+      (sum, attempt) =>
+        sum +
+        (attempt.answers || []).filter(
+          (answer) =>
+            answer.answer !== null &&
+            answer.answer !== undefined
+        ).length,
+      0
+    );
+
+    const correctAnswers = completedAttempts.reduce(
+      (sum, attempt) => sum + (Number(attempt.score) || 0) / 4,
+      0
+    );
+
+    const accuracy = solvedQuestions
+      ? Math.round((correctAnswers / solvedQuestions) * 100)
+      : 0;
+
+    const practiceMinutes = completedAttempts.reduce(
+      (sum, attempt) =>
+        sum + (Number(attempt.examId?.duration) || 0),
+      0
+    );
+
+    const weekStart = new Date();
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(
+      weekStart.getDate() - weekStart.getDay()
+    );
+
+    const completedThisWeek = completedAttempts.filter(
+      (attempt) => new Date(attempt.createdAt) >= weekStart
+    ).length;
+
+    const recentResults = completedAttempts
+      .slice(0, 5)
+      .map((attempt) => ({
+        id: attempt._id,
+        examId: attempt.examId?._id,
+        name: attempt.examId?.name || "Exam",
+        score: Number(attempt.score) || 0,
+        total: Number(attempt.total) || 0,
+        percent: Number(attempt.percent) || 0,
+        createdAt: attempt.createdAt,
+      }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        student: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          profileImage: user.profileImage || "",
+          studentId: profile?.studentId || "",
+          standard: profile?.standard || "",
+          board: profile?.board || "",
+          schoolName: profile?.schoolName || "",
+          academicYear: profile?.academicYear || "",
+        },
+        upcomingExam: upcomingExam
+          ? {
+              id: upcomingExam._id,
+              name: upcomingExam.name,
+              questions: Number(upcomingExam.questions) || 0,
+              duration: Number(upcomingExam.duration) || 0,
+              marks: Number(upcomingExam.marks) || 0,
+              modes: upcomingExam.modes || [],
+            }
+          : null,
+        stats: {
+          completed: totalAttempts,
+          completedThisWeek,
+          averagePercent,
+          practiceMinutes,
+          solvedQuestions,
+          accuracy,
+        },
+        recentResults,
       },
     });
   } catch (error) {
