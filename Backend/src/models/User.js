@@ -4,6 +4,13 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    principalId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      uppercase: true,
+    },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ["student", "teacher", "admin"], required: true },
     profileImage: { type: String, default: "" },
