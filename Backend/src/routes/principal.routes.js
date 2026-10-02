@@ -1,0 +1,13 @@
+const express = require("express");
+const { requireAuth } = require("../middleware/auth");
+const { getOverview, listTeachers, listStudents, listExams, listPapers, listQuestions, getAnalytics, updateUserStatus } = require("../controllers/principal.controller");
+const router = express.Router();
+router.get("/overview", requireAuth, getOverview);
+router.get("/teachers", requireAuth, listTeachers);
+router.get("/students", requireAuth, listStudents);
+router.get("/exams", requireAuth, listExams);
+router.get("/papers", requireAuth, listPapers);
+router.get("/questions", requireAuth, listQuestions);
+router.get("/analytics", requireAuth, getAnalytics);
+router.patch("/users/:id/status", requireAuth, updateUserStatus);
+module.exports = router;
