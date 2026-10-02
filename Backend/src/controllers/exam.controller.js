@@ -410,10 +410,9 @@ const getExamPerformance = async (req, res, next) => {
     }).select("userId studentId standard board schoolName").lean();
     const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
 
-    const questionResultsByAttempt = new Map();
-    const rows = attempts.map((attempt) => {
-      const results = getAttemptQuestionResults(attempt, questionIds);
-      questionResultsByAttempt.set(String(attempt._id), results);
+    const rows = [];
+    for (const attempt of attempts) {
+      const results = await getAttemptQuestionResults(attempt, questionIds);
       const counts = results.reduce(
         (acc, item) => {
           acc[item.status] += 1;
@@ -425,7 +424,7 @@ const getExamPerformance = async (req, res, next) => {
       const student = attempt.studentId;
       const profile = student ? profileMap.get(String(student._id)) : null;
 
-      return {
+      rows.push({
         attemptId: attempt._id,
         student: student
           ? {
@@ -444,8 +443,8 @@ const getExamPerformance = async (req, res, next) => {
         percent: Number(attempt.percent) || 0,
         createdAt: attempt.createdAt,
         ...counts,
-      };
-    });
+      });
+    }
 
     const totals = rows.reduce(
       (acc, row) => {
