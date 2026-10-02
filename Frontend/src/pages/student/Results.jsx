@@ -2,7 +2,7 @@ import { useState } from "react";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
 import { examsApi } from "../../api/questions.api";
-import { CheckCircle2, XCircle, MinusCircle, X, Trophy, CircleCheck, CircleX, CircleMinus } from "lucide-react";
+import { CheckCircle2, XCircle, MinusCircle, X, Trophy, CircleCheck, CircleX, CircleMinus, ClipboardCheck } from "lucide-react";
 import { useData } from "../../context/DataContext";
 
 const statusMeta = {
@@ -126,6 +126,7 @@ export default function Results() {
                   </div>
                   <div className="!flex !min-h-[72px] !items-center !gap-2 !rounded-xl !border !border-green-100 !bg-green-50 !px-3"><CircleCheck size={18} className="!shrink-0 !text-green-600" /><div><strong className="!block !text-xl !font-extrabold !leading-none !text-slate-900">{counts.correct}</strong><span className="!mt-1 !block !text-[10px] !text-slate-500">Correct</span></div></div>
                   <div className="!flex !min-h-[72px] !items-center !gap-2 !rounded-xl !border !border-red-100 !bg-red-50 !px-3"><CircleX size={18} className="!shrink-0 !text-red-600" /><div><strong className="!block !text-xl !font-extrabold !leading-none !text-slate-900">{counts.wrong}</strong><span className="!mt-1 !block !text-[10px] !text-slate-500">Wrong</span></div></div>
+                  <div className="!flex !min-h-[72px] !items-center !gap-2 !rounded-xl !border !border-blue-100 !bg-blue-50 !px-3"><ClipboardCheck size={18} className="!shrink-0 !text-blue-600" /><div><strong className="!block !text-xl !font-extrabold !leading-none !text-slate-900">{counts.correct + counts.wrong}</strong><span className="!mt-1 !block !text-[10px] !text-slate-500">Attempted</span></div></div>
                   <div className="!flex !min-h-[72px] !items-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-3"><CircleMinus size={18} className="!shrink-0 !text-slate-500" /><div><strong className="!block !text-xl !font-extrabold !leading-none !text-slate-900">{counts.missed}</strong><span className="!mt-1 !block !text-[10px] !text-slate-500">Missed</span></div></div>
                 </div>
 
