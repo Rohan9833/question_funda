@@ -252,6 +252,93 @@ const listResults = async (req, res, next) => {
   }
 };
 
+const getResultDetail = async (req, res, next) => {
+  try {
+    const attempt = await ExamAttempt.findOne({
+      _id: req.params.id,
+      studentId: req.auth.sub,
+    })
+      .populate("examId", "name")
+      .lean();
+
+    if (!attempt) {
+      return res.status(404).json({
+        success: false,
+        message: "Result not found.",
+      });
+    }
+
+    const paper = await QuestionPaper.findById(attempt.examId._id)
+      .select("questionIds")
+      .lean();
+
+    const questionIds = paper?.questionIds || [];
+    const questions = await Question.find({
+      _id: { $in: questionIds },
+    })
+      .select("_id text options correctAnswer")
+      .lean();
+
+    const questionMap = new Map(
+      questions.map((question) => [String(question._id), question])
+    );
+
+    const answerMap = new Map(
+      (attempt.answers || []).map((answer) => [
+        String(answer.questionId),
+        answer.answer,
+      ])
+    );
+
+    const correctIndex = { A: 0, B: 1, C: 2, D: 3 };
+
+    const questionResults = questionIds
+      .map((questionId, index) => {
+        const question = questionMap.get(String(questionId));
+
+        if (!question) return null;
+
+        const selectedAnswer = answerMap.has(String(questionId))
+          ? answerMap.get(String(questionId))
+          : null;
+
+        const correctAnswer = correctIndex[question.correctAnswer];
+        const status =
+          selectedAnswer === null || selectedAnswer === undefined
+            ? "missed"
+            : selectedAnswer === correctAnswer
+              ? "correct"
+              : "wrong";
+
+        return {
+          questionId: question._id,
+          number: index + 1,
+          text: question.text,
+          options: (question.options || []).map((option) => option.text),
+          selectedAnswer,
+          correctAnswer,
+          status,
+        };
+      })
+      .filter(Boolean);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: attempt._id,
+        name: attempt.examId?.name || "Exam",
+        score: attempt.score,
+        total: attempt.total,
+        percent: attempt.percent,
+        createdAt: attempt.createdAt,
+        questions: questionResults,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createExam,
   listTeacherExams,
@@ -259,4 +346,5 @@ module.exports = {
   getExam,
   submitExam,
   listResults,
+  getResultDetail,
 };
