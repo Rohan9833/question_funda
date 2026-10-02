@@ -2,6 +2,9 @@ const Question = require("../models/Question");
 const QuestionPaper = require("../models/QuestionPaper");
 const Subject = require("../models/Subject");
 const Chapter = require("../models/Chapter");
+const Exam = require("../models/Exam");
+const ExamAttempt = require("../models/ExamAttempt");
+const StudentProfile = require("../models/StudentProfile");
 
 const text = (value) => String(value ?? "").trim();
 
@@ -222,9 +225,94 @@ const publishQuestionPaper = async (req, res, next) => {
   }
 };
 
+
+const getQuestionPaperPerformance = async (req, res, next) => {
+  try {
+    const paper = await QuestionPaper.findById(req.params.id).lean();
+    if (!paper) return res.status(404).json({ success: false, message: "Question paper not found." });
+    if (!canViewPaper(paper, req)) return res.status(403).json({ success: false, message: "You cannot view this question paper." });
+
+    const exams = await Exam.find({ questionPaperId: paper._id })
+      .select("_id name status createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+    const examIds = exams.map((exam) => exam._id);
+    const attempts = examIds.length
+      ? await ExamAttempt.find({ examId: { $in: examIds } })
+          .populate("studentId", "name email profileImage")
+          .sort({ createdAt: -1 })
+          .lean()
+      : [];
+
+    const profiles = await StudentProfile.find({
+      userId: { $in: attempts.map((a) => a.studentId?._id).filter(Boolean) },
+    }).select("userId studentId standard board schoolName").lean();
+    const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
+    const examMap = new Map(exams.map((exam) => [String(exam._id), exam]));
+
+    const rows = attempts.map((attempt) => {
+      const student = attempt.studentId;
+      const profile = student ? profileMap.get(String(student._id)) : null;
+      return {
+        examId: attempt.examId,
+        examName: examMap.get(String(attempt.examId))?.name || "Exam",
+        examStatus: examMap.get(String(attempt.examId))?.status || "Closed",
+        attemptId: attempt._id,
+        student: student
+          ? {
+              id: student._id,
+              name: student.name,
+              email: student.email,
+              profileImage: student.profileImage || "",
+              studentId: profile?.studentId || "",
+              standard: profile?.standard || "",
+              board: profile?.board || "",
+              schoolName: profile?.schoolName || "",
+            }
+          : null,
+        score: Number(attempt.score) || 0,
+        total: Number(attempt.total) || 0,
+        percent: Number(attempt.percent) || 0,
+        createdAt: attempt.createdAt,
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        paper: {
+          id: paper._id,
+          name: paper.name,
+          subject: paper.subject,
+          questions: paper.questions || paper.questionIds?.length || 0,
+          duration: paper.duration,
+          status: paper.status,
+        },
+        exams: exams.map((exam) => ({
+          id: exam._id,
+          name: exam.name,
+          status: exam.status,
+          createdAt: exam.createdAt,
+        })),
+        attempts: rows,
+        totals: {
+          attempts: rows.length,
+          students: new Set(rows.map((row) => String(row.student?.id)).filter(Boolean)).size,
+          averagePercent: rows.length
+            ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length)
+            : 0,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createQuestionPaper,
   listQuestionPapers,
   getQuestionPaper,
   publishQuestionPaper,
+  getQuestionPaperPerformance,
 };
