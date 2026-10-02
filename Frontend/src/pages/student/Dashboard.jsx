@@ -231,6 +231,7 @@ export default function Dashboard() {
           label="Completed"
           value={stats.completed}
           note={`${stats.completedThisWeek} this week`}
+          onClick={() => navigate("/student/results")}
         />
 
         <StatCard
