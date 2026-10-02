@@ -8,6 +8,8 @@ import Profile from "./pages/auth/Profile";
 import TD from "./pages/teacher/Dashboard";
 import QB from "./pages/teacher/QuestionBank";
 import QP from "./pages/teacher/QuestionPapers";
+import QPD from "./pages/teacher/PaperDetail";
+import TED from "./pages/teacher/ExamDetail";
 import TE from "./pages/teacher/Exams";
 import TS from "./pages/teacher/Students";
 import TA from "./pages/teacher/Analytics";
@@ -48,7 +50,9 @@ export default function App() {
               <Route path="/teacher/dashboard" element={<TD />} />
               <Route path="/teacher/questions" element={<QB />} />
               <Route path="/teacher/papers" element={<QP />} />
+              <Route path="/teacher/papers/:id" element={<QPD />} />
               <Route path="/teacher/exams" element={<TE />} />
+              <Route path="/teacher/exams/:id" element={<TED />} />
               <Route path="/teacher/students" element={<TS />} />
               <Route path="/teacher/analytics" element={<TA />} />
             </>
