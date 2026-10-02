@@ -250,7 +250,7 @@ export default function Dashboard() {
 
         <StatCard
           icon={BookOpen}
-          label="Solved"
+          label="Questions Attempted"
           value={stats.solvedQuestions.toLocaleString("en-IN")}
           note={`${stats.accuracy}% accuracy`}
         />
