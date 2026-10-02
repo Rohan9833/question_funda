@@ -113,7 +113,17 @@ export default function PrincipalDashboard() {
   if (section === "papers") return <><Papers data={data} search={search} setSearch={setSearch} load={() => load(true)} refreshing={refreshing} title={title} description={description} onOpen={openPaper}/>{(paperDetail || detailLoading) && <PrincipalPaperModal data={paperDetail} loading={detailLoading} onClose={() => setPaperDetail(null)} />}</>;
   if (section === "questions") return <Questions data={data} search={search} setSearch={setSearch} subject={subject} setSubject={setSubject} difficulty={difficulty} setDifficulty={setDifficulty} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
   if (section === "analytics") return <Analytics data={data} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
-  return <Overview data={data} navigate={navigate} load={() => load(true)} refreshing={refreshing} onOpenExam={openExam}/>;
+  return <>
+    <Overview data={data} navigate={navigate} load={() => load(true)} refreshing={refreshing} onOpenExam={openExam}/>
+    {(examDetail || detailLoading) && <PrincipalExamModal
+      data={examDetail}
+      loading={detailLoading}
+      attemptDetail={attemptDetail}
+      onOpenAttempt={openExamAttempt}
+      onCloseAttempt={() => setAttemptDetail(null)}
+      onClose={() => { setExamDetail(null); setAttemptDetail(null); }}
+    />}
+  </>;
 }
 
 function Toolbar({ children }) { return <div className="mb-4 flex flex-col gap-2 sm:flex-row">{children}</div>; }
