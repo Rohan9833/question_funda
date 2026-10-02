@@ -156,7 +156,75 @@ const listQuestionPapers = async (req, res, next) => {
   }
 };
 
+
+const canViewPaper = (paper, req) =>
+  req.auth?.role === "admin" || String(paper.createdBy) === String(req.auth?.sub);
+
+const getQuestionPaper = async (req, res, next) => {
+  try {
+    const paper = await QuestionPaper.findById(req.params.id).lean();
+    if (!paper) return res.status(404).json({ success: false, message: "Question paper not found." });
+    if (!canViewPaper(paper, req)) {
+      return res.status(403).json({ success: false, message: "You cannot view this question paper." });
+    }
+
+    const questionIds = paper.questionIds || [];
+    const questions = await Question.find({ _id: { $in: questionIds } })
+      .select("_id serialNumber text options correctAnswer difficulty")
+      .lean();
+    const map = new Map(questions.map((q) => [String(q._id), q]));
+    const orderedQuestions = questionIds
+      .map((id, index) => {
+        const question = map.get(String(id));
+        if (!question) return null;
+        return { ...question, number: index + 1 };
+      })
+      .filter(Boolean);
+
+    return res.json({
+      success: true,
+      data: {
+        paper: {
+          id: paper._id,
+          name: paper.name,
+          subject: paper.subject,
+          chapters: paper.chapters || [],
+          questions: paper.questions || orderedQuestions.length,
+          duration: paper.duration,
+          status: paper.status,
+          modes: paper.modes || [],
+          createdBy: paper.createdBy,
+          createdAt: paper.createdAt,
+        },
+        questions: orderedQuestions,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const publishQuestionPaper = async (req, res, next) => {
+  try {
+    const paper = await QuestionPaper.findById(req.params.id);
+    if (!paper) return res.status(404).json({ success: false, message: "Question paper not found." });
+    if (!canViewPaper(paper, req)) return res.status(403).json({ success: false, message: "You cannot update this question paper." });
+
+    const status = String(req.body.status || "Published");
+    if (!["Draft", "Published"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid paper status." });
+    }
+    paper.status = status;
+    await paper.save();
+    return res.json({ success: true, message: "Question paper status updated.", data: paper });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createQuestionPaper,
   listQuestionPapers,
+  getQuestionPaper,
+  publishQuestionPaper,
 };
