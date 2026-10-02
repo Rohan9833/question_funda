@@ -2,5 +2,7 @@ import client from "./client";
 export const papersApi = {
   list: () => client.get("/papers"),
   create: (d) => client.post("/papers", d),
-  get: (id) => client.get("/papers/" + id),
+  get: (id) => client.get("/question-papers/" + id),
+  performance: (id) => client.get("/question-papers/" + id + "/performance"),
+  updateStatus: (id, status) => client.patch("/question-papers/" + id + "/status", { status }),
 };
