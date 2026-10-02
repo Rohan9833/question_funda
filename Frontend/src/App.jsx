@@ -15,9 +15,18 @@ import SD from "./pages/student/Dashboard";
 import AE from "./pages/student/AvailableExams";
 import SR from "./pages/student/Results";
 import Exam from "./pages/exam/Exam";
+import PrincipalDashboard from "./pages/principal/PrincipalDashboard";
 
 export default function App() {
   const { user } = useAuth();
+
+  const homePath = user
+    ? user.role === "admin"
+      ? "/principal/dashboard"
+      : user.role === "teacher"
+        ? "/teacher/dashboard"
+        : "/student/dashboard"
+    : "/login";
 
   return (
     <Routes>
@@ -28,12 +37,14 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route path="/profile" element={<Profile />} />
 
-          {user?.role === "teacher" ? (
+          {user?.role === "admin" ? (
             <>
-              <Route
-                path="/teacher"
-                element={<Navigate to="/teacher/dashboard" />}
-              />
+              <Route path="/principal" element={<Navigate to="/principal/dashboard" replace />} />
+              <Route path="/principal/:section" element={<PrincipalDashboard />} />
+            </>
+          ) : user?.role === "teacher" ? (
+            <>
+              <Route path="/teacher" element={<Navigate to="/teacher/dashboard" />} />
               <Route path="/teacher/dashboard" element={<TD />} />
               <Route path="/teacher/questions" element={<QB />} />
               <Route path="/teacher/papers" element={<QP />} />
@@ -43,10 +54,7 @@ export default function App() {
             </>
           ) : (
             <>
-              <Route
-                path="/student"
-                element={<Navigate to="/student/dashboard" />}
-              />
+              <Route path="/student" element={<Navigate to="/student/dashboard" />} />
               <Route path="/student/dashboard" element={<SD />} />
               <Route path="/student/exams" element={<AE />} />
               <Route path="/student/results" element={<SR />} />
@@ -57,20 +65,8 @@ export default function App() {
         <Route path="/exam/:id" element={<Exam />} />
       </Route>
 
-      <Route
-        path="/"
-        element={
-          <Navigate
-            to={
-              user
-                ? user.role === "teacher"
-                  ? "/teacher/dashboard"
-                  : "/student/dashboard"
-                : "/login"
-            }
-          />
-        }
-      />
+      <Route path="/" element={<Navigate to={homePath} replace />} />
+      <Route path="*" element={<Navigate to={homePath} replace />} />
     </Routes>
   );
 }

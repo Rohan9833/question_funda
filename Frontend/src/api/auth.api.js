@@ -2,9 +2,9 @@ import client from "./client";
 
 const getRefreshToken = () => localStorage.getItem("qf_refresh_token");
 
-export const loginApi = async (email, password, device = "web") => {
+export const loginApi = async (identifier, password, device = "web") => {
   const response = await client.post("/auth/login", {
-    email,
+    identifier,
     password,
     device,
   });
@@ -47,7 +47,8 @@ export const updateProfileApi = async (payload) => {
 
 // Backward-compatible object API for existing imports.
 export const authApi = {
-  login: (data) => loginApi(data.email, data.password, data.device),
+  login: (data) =>
+    loginApi(data.identifier || data.email, data.password, data.device),
   me: meApi,
   register: registerApi,
   refresh: refreshApi,

@@ -17,6 +17,12 @@ const publicUser = (user, profile = null) => ({
   id: user._id,
   name: user.name,
   email: user.email,
+  principalId: user.principalId || null,
+  accountId:
+    user.principalId ||
+    profile?.teacherId ||
+    profile?.studentId ||
+    user.email,
   role: user.role,
   profileImage: user.profileImage,
   phone: user.phone,
@@ -157,23 +163,56 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    const { email, password, device = "" } = req.body;
+    const {
+      identifier,
+      email,
+      password,
+      device = "",
+    } = req.body;
 
-    if (!email || !password) {
+    const loginIdentifier = (identifier || email || "").trim();
+
+    if (!loginIdentifier || !password) {
       return res.status(400).json({
         success: false,
-        message: "email and password are required",
+        message: "Account ID/email and password are required",
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() }).select(
-      "+passwordHash"
-    );
+    const normalizedEmail = loginIdentifier.toLowerCase();
+    const normalizedAccountId = loginIdentifier.toUpperCase();
+
+    let user = await User.findOne({
+      $or: [
+        { email: normalizedEmail },
+        { principalId: normalizedAccountId },
+      ],
+    }).select("+passwordHash");
+
+    if (!user) {
+      const studentProfile = await StudentProfile.findOne({
+        studentId: loginIdentifier,
+      }).lean();
+
+      if (studentProfile) {
+        user = await User.findById(studentProfile.userId).select("+passwordHash");
+      }
+    }
+
+    if (!user) {
+      const teacherProfile = await TeacherProfile.findOne({
+        teacherId: loginIdentifier,
+      }).lean();
+
+      if (teacherProfile) {
+        user = await User.findById(teacherProfile.userId).select("+passwordHash");
+      }
+    }
 
     if (!user || !verifyPassword(password, user.passwordHash)) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: "Invalid account ID/email or password",
       });
     }
 

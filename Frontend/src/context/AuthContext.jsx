@@ -28,19 +28,24 @@ export function AuthProvider({ children }) {
 
       try {
         let response;
+
         try {
           response = accessToken ? await meApi() : await refreshApi(refreshToken);
+
           if (!accessToken) {
             localStorage.setItem(ACCESS_TOKEN_KEY, response.data.accessToken);
             localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
             response = await meApi();
           }
         } catch {
+          if (!refreshToken) throw new Error("No refresh token available");
+
           response = await refreshApi(refreshToken);
           localStorage.setItem(ACCESS_TOKEN_KEY, response.data.accessToken);
           localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
           response = await meApi();
         }
+
         setUser(response.data);
         localStorage.setItem(USER_KEY, JSON.stringify(response.data));
       } catch {
@@ -54,13 +59,20 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
-  const login = async (email, password) => {
-    const response = await loginApi(email, password);
-    localStorage.setItem(ACCESS_TOKEN_KEY, response.data.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(response.data.user));
-    setUser(response.data.user);
-    return response.data.user;
+  const login = async (identifier, password) => {
+    const response = await loginApi(identifier, password);
+
+    // loginApi returns the server body:
+    // { success, message, data: { user, accessToken, refreshToken } }
+    const authData = response.data;
+
+    localStorage.setItem(ACCESS_TOKEN_KEY, authData.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, authData.refreshToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(authData.user));
+
+    setUser(authData.user);
+
+    return authData.user;
   };
 
   const updateProfile = async (updates) => {
@@ -72,7 +84,9 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      if (localStorage.getItem(ACCESS_TOKEN_KEY)) await logoutApi();
+      if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
+        await logoutApi();
+      }
     } catch {
       // The local session is cleared even if the server session has expired.
     } finally {
@@ -82,7 +96,16 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <C.Provider value={{ user, login, logout, updateProfile, isAuthenticated: !!user, loading }}>
+    <C.Provider
+      value={{
+        user,
+        login,
+        logout,
+        updateProfile,
+        isAuthenticated: !!user,
+        loading,
+      }}
+    >
       {children}
     </C.Provider>
   );

@@ -40,7 +40,7 @@ export default function Topbar() {
   return (
     <header className="topbar">
       <div className="breadcrumbs">
-        {user.role} / <strong>{pageName}</strong>
+        {user.role === "admin" ? "principal" : user.role} / <strong>{pageName}</strong>
       </div>
 
       <div className="top-actions">
@@ -59,7 +59,7 @@ export default function Topbar() {
             <span className="top-avatar">{user.name.slice(0, 2).toUpperCase()}</span>
             <span className="profile-trigger-info">
               <strong>{user.name}</strong>
-              <small>{user.role}</small>
+              <small>{user.role === "admin" ? "Principal" : user.role}</small>
             </span>
             <ChevronDown
               className={profileOpen ? "profile-chevron open" : "profile-chevron"}
@@ -75,7 +75,7 @@ export default function Topbar() {
                 </span>
                 <div>
                   <strong>{user.name}</strong>
-                  <span>{user.role} workspace</span>
+                  <span>{user.role === "admin" ? "Principal workspace" : `${user.role} workspace`}</span>
                 </div>
               </div>
 
