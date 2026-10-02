@@ -54,8 +54,8 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
-  const login = async (email, password) => {
-    const response = await loginApi(email, password);
+  const login = async (identifier, password) => {
+    const response = await loginApi(identifier, password);
     localStorage.setItem(ACCESS_TOKEN_KEY, response.data.accessToken);
     localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
     localStorage.setItem(USER_KEY, JSON.stringify(response.data.user));
