@@ -258,7 +258,7 @@ const getResultDetail = async (req, res, next) => {
       _id: req.params.id,
       studentId: req.auth.sub,
     })
-      .populate("examId", "name")
+      .populate("examId", "name questionPaperId")
       .lean();
 
     if (!attempt) {
@@ -268,7 +268,7 @@ const getResultDetail = async (req, res, next) => {
       });
     }
 
-    const paper = await QuestionPaper.findById(attempt.examId._id)
+    const paper = await QuestionPaper.findById(attempt.examId?.questionPaperId)
       .select("questionIds")
       .lean();
 
