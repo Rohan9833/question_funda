@@ -34,8 +34,8 @@ const listTeachers = async (req, res, next) => {
   if (!requirePrincipal(req, res)) return;
   try {
     const { page, limit } = pageArgs(req); const search = text(req.query.search); const filter = { role: "teacher" };
-    if (search) filter.$or = [{ name: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }];
-    const [users, total] = await Promise.all([User.find(filter).select("name email phone profileImage isActive createdAt lastLoginAt").sort({ name: 1 }).skip((page - 1) * limit).limit(limit).lean(), User.countDocuments(filter)]);
+    if (search) { const matchingProfiles = await TeacherProfile.find({ teacherId: { $regex: search, $options: "i" } }).select("userId").lean(); filter.$or = [{ name: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { _id: { $in: matchingProfiles.map((p) => p.userId) } }]; }
+    const [users, total, activeTotal] = await Promise.all([User.find(filter).select("name email phone profileImage isActive createdAt lastLoginAt").sort({ name: 1 }).skip((page - 1) * limit).limit(limit).lean(), User.countDocuments(filter), User.countDocuments({ ...filter, isActive: true })]);
     const ids = users.map((u) => u._id);
     const [profiles, papers, exams] = await Promise.all([
       TeacherProfile.find({ userId: { $in: ids } }).lean(),
@@ -44,7 +44,7 @@ const listTeachers = async (req, res, next) => {
     ]);
     const profileMap = new Map(profiles.map((p) => [String(p.userId), p])); const paperMap = new Map(papers.map((p) => [String(p._id), p.count])); const examMap = new Map(exams.map((e) => [String(e._id), e.count]));
     const data = users.map((user) => { const profile = profileMap.get(String(user._id)); return { id: user._id, teacherId: profile?.teacherId || ("T-" + String(user._id).slice(-6).toUpperCase()), name: user.name, email: user.email, phone: user.phone || "", subjects: profile?.subjects || [], subject: profile?.subjects?.join(", ") || profile?.specialization || "—", qualification: profile?.qualification || "", institution: profile?.institution || "", designation: profile?.designation || "", papers: paperMap.get(String(user._id)) || 0, exams: examMap.get(String(user._id)) || 0, status: user.isActive ? "Active" : "Inactive", isActive: user.isActive, lastLoginAt: user.lastLoginAt }; });
-    return res.json({ success: true, data: { teachers: data, pagination: { page, limit, total, pages: total ? Math.ceil(total / limit) : 0 }, summary: { totalTeachers: total, activeTeachers: data.filter((t) => t.isActive).length } } });
+    return res.json({ success: true, data: { teachers: data, pagination: { page, limit, total, pages: total ? Math.ceil(total / limit) : 0 }, summary: { totalTeachers: total, activeTeachers: activeTotal } } });
   } catch (error) { next(error); }
 };
 
@@ -52,14 +52,14 @@ const listStudents = async (req, res, next) => {
   if (!requirePrincipal(req, res)) return;
   try {
     const { page, limit } = pageArgs(req); const search = text(req.query.search); const filter = { role: "student" };
-    if (search) filter.$or = [{ name: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }];
-    const [users, total] = await Promise.all([User.find(filter).select("name email phone profileImage isActive createdAt lastLoginAt").sort({ name: 1 }).skip((page - 1) * limit).limit(limit).lean(), User.countDocuments(filter)]);
+    if (search) { const matchingProfiles = await StudentProfile.find({ studentId: { $regex: search, $options: "i" } }).select("userId").lean(); filter.$or = [{ name: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { _id: { $in: matchingProfiles.map((p) => p.userId) } }]; }
+    const [users, total, activeTotal] = await Promise.all([User.find(filter).select("name email phone profileImage isActive createdAt lastLoginAt").sort({ name: 1 }).skip((page - 1) * limit).limit(limit).lean(), User.countDocuments(filter), User.countDocuments({ ...filter, isActive: true })]);
     const ids = users.map((u) => u._id);
     const [profiles, attempts] = await Promise.all([StudentProfile.find({ userId: { $in: ids } }).lean(), ExamAttempt.find({ studentId: { $in: ids } }).select("studentId examId percent createdAt").lean()]);
     const profileMap = new Map(profiles.map((p) => [String(p.userId), p])); const grouped = new Map();
     for (const attempt of attempts) { const key = String(attempt.studentId); if (!grouped.has(key)) grouped.set(key, { attempts: 0, totalPercent: 0, exams: new Set(), lastActiveAt: null }); const s = grouped.get(key); s.attempts += 1; s.totalPercent += Number(attempt.percent) || 0; s.exams.add(String(attempt.examId)); if (!s.lastActiveAt || new Date(attempt.createdAt) > new Date(s.lastActiveAt)) s.lastActiveAt = attempt.createdAt; }
     const data = users.map((user) => { const profile = profileMap.get(String(user._id)); const s = grouped.get(String(user._id)) || { attempts: 0, totalPercent: 0, exams: new Set(), lastActiveAt: null }; const avg = s.attempts ? Math.round(s.totalPercent / s.attempts) : 0; return { id: user._id, studentId: profile?.studentId || ("S-" + String(user._id).slice(-6).toUpperCase()), name: user.name, email: user.email, phone: user.phone || "", className: profile?.standard || "—", standard: profile?.standard || "", board: profile?.board || "", schoolName: profile?.schoolName || "", academicYear: profile?.academicYear || "", exams: s.exams.size, attempts: s.attempts, average: avg, averagePercent: avg, lastActiveAt: s.lastActiveAt || user.lastLoginAt, status: user.isActive ? "Active" : "Inactive", isActive: user.isActive }; });
-    return res.json({ success: true, data: { students: data, pagination: { page, limit, total, pages: total ? Math.ceil(total / limit) : 0 }, summary: { totalStudents: total, activeStudents: data.filter((s) => s.isActive).length, totalAttempts: attempts.length, averagePercent: attempts.length ? Math.round(attempts.reduce((sum, a) => sum + (Number(a.percent) || 0), 0) / attempts.length) : 0 } } });
+    return res.json({ success: true, data: { students: data, pagination: { page, limit, total, pages: total ? Math.ceil(total / limit) : 0 }, summary: { totalStudents: total, activeStudents: activeTotal, totalAttempts: attempts.length, averagePercent: attempts.length ? Math.round(attempts.reduce((sum, a) => sum + (Number(a.percent) || 0), 0) / attempts.length) : 0 } } });
   } catch (error) { next(error); }
 };
 
