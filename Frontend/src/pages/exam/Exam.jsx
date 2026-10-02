@@ -91,7 +91,13 @@ export default function Exam() {
   };
 
   if (loading) {
-    return <div className="exam-shell"><div className="question-card"><h1>Loading exam...</h1></div></div>;
+    return (
+      <div className="exam-shell">
+        <div className="question-card">
+          <h1>Loading exam...</h1>
+        </div>
+      </div>
+    );
   }
 
   if (error || !exam) {
@@ -109,7 +115,9 @@ export default function Exam() {
     <div className="exam-shell">
       <header className="exam-top">
         <div className="brand">
-          <div className="brand-mark"><Sparkles /></div>
+          <div className="brand-mark">
+            <Sparkles />
+          </div>
           <strong>Question Funda</strong>
         </div>
 
@@ -139,6 +147,7 @@ export default function Exam() {
             total={questions.length}
             current={examState.index}
             answers={examState.answers}
+            questions={questions}
             onSelect={examState.go}
           />
         </aside>
@@ -168,20 +177,31 @@ export default function Exam() {
             <Button variant="secondary" onClick={examState.previous}>
               Previous
             </Button>
-            <Button
-              onClick={
-                examState.index === questions.length - 1
-                  ? finish
-                  : examState.next
-              }
-              disabled={submitting || !questions.length}
-            >
-              {submitting
-                ? "Submitting..."
-                : examState.index === questions.length - 1
-                  ? "Finish & Submit"
-                  : "Next"}
-            </Button>
+
+            <div className="exam-nav-actions">
+              <Button
+                variant="secondary"
+                onClick={finish}
+                disabled={submitting || !questions.length}
+              >
+                {submitting ? "Submitting..." : "Submit Test"}
+              </Button>
+
+              <Button
+                onClick={
+                  examState.index === questions.length - 1
+                    ? finish
+                    : examState.next
+                }
+                disabled={submitting || !questions.length}
+              >
+                {submitting
+                  ? "Submitting..."
+                  : examState.index === questions.length - 1
+                    ? "Finish & Submit"
+                    : "Next"}
+              </Button>
+            </div>
           </div>
         </section>
       </div>

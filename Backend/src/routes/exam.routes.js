@@ -6,6 +6,7 @@ const {
   getExam,
   submitExam,
   listResults,
+  getResultDetail,
 } = require("../controllers/exam.controller");
 const { requireAuth } = require("../middleware/auth");
 
@@ -21,6 +22,7 @@ router.get("/", requireAuth, (req, res, next) => {
 
 router.post("/", requireAuth, createExam);
 router.get("/results/me", requireAuth, listResults);
+router.get("/results/:id", requireAuth, getResultDetail);
 router.get("/:id", requireAuth, getExam);
 router.post("/:id/submit", requireAuth, submitExam);
 
