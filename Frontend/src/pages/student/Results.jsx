@@ -17,11 +17,13 @@ export default function Results() {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [questionFilter, setQuestionFilter] = useState("all");
 
   const openResult = async (result) => {
     setSelectedResult(result);
     setDetail(null);
     setError("");
+    setQuestionFilter("all");
     setLoading(true);
     try {
       const response = await examsApi.resultDetail(result.id);
@@ -45,6 +47,12 @@ export default function Results() {
         return acc;
       }, { correct: 0, wrong: 0, missed: 0 })
     : { correct: 0, wrong: 0, missed: 0 };
+
+  const filteredQuestions = detail
+    ? questionFilter === "all"
+      ? detail.questions
+      : detail.questions.filter((question) => question.status === questionFilter)
+    : [];
 
   return (
     <>
@@ -121,18 +129,61 @@ export default function Results() {
                   <div className="!flex !min-h-[72px] !items-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-3"><CircleMinus size={18} className="!shrink-0 !text-slate-500" /><div><strong className="!block !text-xl !font-extrabold !leading-none !text-slate-900">{counts.missed}</strong><span className="!mt-1 !block !text-[10px] !text-slate-500">Missed</span></div></div>
                 </div>
 
-                <div className="!flex !shrink-0 !items-center !justify-between !gap-3 !px-5 !py-4 sm:!px-7">
-                  <div className="!flex !items-baseline !gap-2"><strong className="!text-sm !font-bold !text-slate-900">Question review</strong><span className="!text-[10px] !text-slate-400">{detail.questions.length} questions</span></div>
-                  <div className="!hidden !items-center !gap-3 sm:!flex">
-                    <span className="!flex !items-center !gap-1.5 !text-[10px] !font-semibold !text-slate-500"><i className="!h-2 !w-2 !rounded-full !bg-green-500" />Correct</span>
-                    <span className="!flex !items-center !gap-1.5 !text-[10px] !font-semibold !text-slate-500"><i className="!h-2 !w-2 !rounded-full !bg-red-500" />Wrong</span>
-                    <span className="!flex !items-center !gap-1.5 !text-[10px] !font-semibold !text-slate-500"><i className="!h-2 !w-2 !rounded-full !bg-slate-400" />Missed</span>
+                <div className="!flex !shrink-0 !flex-col !gap-3 !border-b !border-slate-100 !px-5 !py-4 sm:!px-7">
+                  <div className="!flex !items-center !justify-between !gap-3">
+                    <div className="!flex !items-baseline !gap-2">
+                      <strong className="!text-sm !font-bold !text-slate-900">Question review</strong>
+                      <span className="!text-[10px] !text-slate-400">
+                        {filteredQuestions.length} of {detail.questions.length}
+                      </span>
+                    </div>
+
+                    <div className="!hidden !items-center !gap-3 sm:!flex">
+                      <span className="!flex !items-center !gap-1.5 !text-[10px] !font-semibold !text-slate-500"><i className="!h-2 !w-2 !rounded-full !bg-green-500" />Correct</span>
+                      <span className="!flex !items-center !gap-1.5 !text-[10px] !font-semibold !text-slate-500"><i className="!h-2 !w-2 !rounded-full !bg-red-500" />Wrong</span>
+                      <span className="!flex !items-center !gap-1.5 !text-[10px] !font-semibold !text-slate-500"><i className="!h-2 !w-2 !rounded-full !bg-slate-400" />Missed</span>
+                    </div>
+                  </div>
+
+                  <div className="!flex !flex-wrap !items-center !gap-2">
+                    {[
+                      { key: "all", label: "All", count: detail.questions.length },
+                      { key: "correct", label: "Correct", count: counts.correct },
+                      { key: "wrong", label: "Wrong", count: counts.wrong },
+                      { key: "missed", label: "Missed", count: counts.missed },
+                    ].map((filter) => {
+                      const active = questionFilter === filter.key;
+
+                      return (
+                        <button
+                          key={filter.key}
+                          type="button"
+                          onClick={() => setQuestionFilter(filter.key)}
+                          className={
+                            active
+                              ? "!inline-flex !items-center !gap-1.5 !rounded-lg !border !border-green-600 !bg-green-600 !px-3 !py-1.5 !text-[10px] !font-bold !text-white !shadow-sm"
+                              : "!inline-flex !items-center !gap-1.5 !rounded-lg !border !border-slate-200 !bg-white !px-3 !py-1.5 !text-[10px] !font-bold !text-slate-600 hover:!border-green-200 hover:!bg-green-50 hover:!text-green-700"
+                          }
+                        >
+                          {filter.label}
+                          <span
+                            className={
+                              active
+                                ? "!rounded-md !bg-white/20 !px-1.5 !py-0.5 !text-[9px]"
+                                : "!rounded-md !bg-slate-100 !px-1.5 !py-0.5 !text-[9px] !text-slate-500"
+                            }
+                          >
+                            {filter.count}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div className="!min-h-0 !flex-1 !overflow-y-auto !px-5 !pb-5 sm:!px-7">
                   <div className="!space-y-3">
-                    {detail.questions.map((question) => {
+                    {filteredQuestions.length ? filteredQuestions.map((question) => {
                       const meta = statusMeta[question.status] || statusMeta.missed;
                       const Icon = meta.Icon;
                       return (
@@ -160,7 +211,15 @@ export default function Results() {
                           </div>
                         </article>
                       );
-                    })}
+                    }) : (
+                      <div className="!flex !min-h-[220px] !flex-col !items-center !justify-center !rounded-2xl !border !border-dashed !border-slate-200 !bg-slate-50 !p-8 !text-center">
+                        <div className="!mb-3 !flex !h-10 !w-10 !items-center !justify-center !rounded-full !bg-white !text-slate-400 !shadow-sm">
+                          <MinusCircle size={18} />
+                        </div>
+                        <strong className="!text-sm !font-bold !text-slate-800">No {questionFilter} questions</strong>
+                        <span className="!mt-1 !text-xs !text-slate-500">There are no questions in this category for this attempt.</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
