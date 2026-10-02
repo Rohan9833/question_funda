@@ -19,4 +19,5 @@ export const examsApi = {
   get: (id) => client.get(`/exams/${id}`),
   submit: (id, data) => client.post(`/exams/${id}/submit`, data),
   results: () => client.get("/exams/results/me"),
+  resultDetail: (id) => client.get(`/exams/results/${id}`),
 };
