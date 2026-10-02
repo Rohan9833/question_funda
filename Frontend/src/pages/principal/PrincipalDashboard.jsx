@@ -1,338 +1,84 @@
-import { useMemo } from "react";
-import { useLocation } from "react-router-dom";
-import {
-  Activity,
-  ArrowUpRight,
-  BookOpen,
-  CheckCircle2,
-  ClipboardCheck,
-  GraduationCap,
-  MoreHorizontal,
-  Search,
-  ShieldCheck,
-  Users,
-  FileText,
-  Clock3,
-  AlertCircle,
-} from "lucide-react";
-import { useData } from "../../context/DataContext";
-
-const teachers = [
-  { id: "T-1042", name: "Dr. Anjali Mehta", email: "anjali.mehta@school.edu", subject: "Biology", papers: 14, exams: 8, status: "Active" },
-  { id: "T-1043", name: "Prof. Rahul Shah", email: "rahul.shah@school.edu", subject: "Physics", papers: 9, exams: 6, status: "Active" },
-  { id: "T-1044", name: "Dr. Neha Joshi", email: "neha.joshi@school.edu", subject: "Chemistry", papers: 11, exams: 7, status: "Active" },
-  { id: "T-1045", name: "Prof. Amit Kulkarni", email: "amit.kulkarni@school.edu", subject: "Biology", papers: 7, exams: 4, status: "Active" },
-  { id: "T-1046", name: "Ms. Priya Nair", email: "priya.nair@school.edu", subject: "Chemistry", papers: 5, exams: 3, status: "Inactive" },
-];
-
-const students = [
-  { id: "S-22041", name: "Aarav Patil", email: "aarav@example.com", className: "12-A", exams: 12, average: "82%", status: "Active" },
-  { id: "S-22042", name: "Isha Sharma", email: "isha@example.com", className: "12-A", exams: 15, average: "91%", status: "Active" },
-  { id: "S-22043", name: "Vivaan Desai", email: "vivaan@example.com", className: "12-B", exams: 10, average: "76%", status: "Active" },
-  { id: "S-22044", name: "Anaya Kapoor", email: "anaya@example.com", className: "12-B", exams: 14, average: "88%", status: "Active" },
-  { id: "S-22045", name: "Reyansh Gupta", email: "reyansh@example.com", className: "12-C", exams: 8, average: "69%", status: "Inactive" },
-];
-
-const principalExams = [
-  { id: "EX-301", name: "NEET Biology — Practice Test 05", teacher: "Dr. Anjali Mehta", questions: 152, attempts: 186, status: "Live", date: "02 Oct 2026" },
-  { id: "EX-302", name: "Physics — Mechanics Assessment", teacher: "Prof. Rahul Shah", questions: 60, attempts: 142, status: "Completed", date: "01 Oct 2026" },
-  { id: "EX-303", name: "Chemistry — Organic Basics", teacher: "Dr. Neha Joshi", questions: 75, attempts: 96, status: "Scheduled", date: "04 Oct 2026" },
-  { id: "EX-304", name: "NEET Biology — Genetics Revision", teacher: "Prof. Amit Kulkarni", questions: 50, attempts: 74, status: "Draft", date: "—" },
-];
-
-const principalPapers = [
-  { id: "QP-501", name: "NEET Biology — Full Mock 01", teacher: "Dr. Anjali Mehta", questions: 180, duration: "180 min", status: "Published" },
-  { id: "QP-502", name: "Physics — Mechanics Test", teacher: "Prof. Rahul Shah", questions: 45, duration: "60 min", status: "Published" },
-  { id: "QP-503", name: "Chemistry — Organic Basics", teacher: "Dr. Neha Joshi", questions: 60, duration: "75 min", status: "Draft" },
-  { id: "QP-504", name: "Biology — Genetics Revision", teacher: "Prof. Amit Kulkarni", questions: 50, duration: "45 min", status: "Published" },
-];
-
-const principalQuestions = [
-  { id: "Q-1001", subject: "Biology", chapter: "Cell", difficulty: "Easy", text: "Which organelle is known as the powerhouse of the cell?", teacher: "Dr. Anjali Mehta" },
-  { id: "Q-1002", subject: "Physics", chapter: "Current Electricity", difficulty: "Easy", text: "The SI unit of electric current is:", teacher: "Prof. Rahul Shah" },
-  { id: "Q-1003", subject: "Biology", chapter: "Genetics", difficulty: "Medium", text: "Which bond holds the two strands of DNA together?", teacher: "Prof. Amit Kulkarni" },
-  { id: "Q-1004", subject: "Chemistry", chapter: "Organic Chemistry", difficulty: "Hard", text: "Which reaction is commonly used to prepare alkenes?", teacher: "Dr. Neha Joshi" },
-];
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Activity, ArrowUpRight, BookOpen, CheckCircle2, ClipboardCheck, GraduationCap, RefreshCw, Search, ShieldCheck, Users, FileText, Power, Clock3 } from "lucide-react";
+import { principalApi } from "../../api/principal.api";
 
 const navTitle = {
-  dashboard: ["System Overview", "A complete view of the Question Funda ecosystem."],
-  teachers: ["Teachers", "Manage every teacher account, activity and academic contribution."],
+  dashboard: ["System Overview", "A live view of the Question Funda ecosystem."],
+  teachers: ["Teachers", "Manage teacher accounts and view their academic contribution."],
   students: ["Students", "Monitor the complete student population and examination activity."],
-  exams: ["All Exams", "Every scheduled, live, completed and draft examination."],
+  exams: ["All Exams", "Every draft, live and closed examination across the platform."],
   papers: ["Question Papers", "Every generated paper with ownership, size and status."],
   questions: ["Question Bank", "A central view of every question across all subjects."],
-  analytics: ["System Analytics", "High-level academic activity and platform health."],
+  analytics: ["System Analytics", "Institution-wide examination activity and performance."]
 };
 
 function Status({ children }) {
-  const map = {
-    Active: "bg-green-50 text-green-700",
-    Live: "bg-green-50 text-green-700",
-    Published: "bg-green-50 text-green-700",
-    Completed: "bg-slate-100 text-slate-600",
-    Scheduled: "bg-blue-50 text-blue-700",
-    Draft: "bg-amber-50 text-amber-700",
-    Inactive: "bg-red-50 text-red-600",
-  };
-
-  return (
-    <span className={"inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold " + (map[children] || "bg-slate-100 text-slate-600")}>
-      {children}
-    </span>
-  );
+  const map = { Active: "bg-green-50 text-green-700", Live: "bg-green-50 text-green-700", Published: "bg-green-50 text-green-700", Closed: "bg-slate-100 text-slate-600", Completed: "bg-slate-100 text-slate-600", Scheduled: "bg-blue-50 text-blue-700", Draft: "bg-amber-50 text-amber-700", Inactive: "bg-red-50 text-red-600" };
+  return <span className={"inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold " + (map[children] || "bg-slate-100 text-slate-600")}>{children}</span>;
 }
-
-function SectionHeader({ title, description, count }) {
-  return (
-    <div className="mb-5 flex items-end justify-between gap-4">
-      <div>
-        <h2 className="font-[Manrope] text-lg font-extrabold tracking-tight text-slate-900">{title}</h2>
-        <p className="mt-1 text-xs text-slate-500">{description}</p>
-      </div>
-      {count !== undefined && (
-        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-500">
-          {count} records
-        </span>
-      )}
-    </div>
-  );
-}
-
-function DataTable({ headers, children }) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80">
-              {headers.map((header) => (
-                <th key={header} className="px-5 py-3 text-left text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>{children}</tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function Row({ children }) {
-  return <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">{children}</tr>;
-}
-
-function Cell({ children, className = "" }) {
-  return <td className={"px-5 py-4 text-xs text-slate-600 " + className}>{children}</td>;
-}
-
-export default function PrincipalDashboard() {
-  const location = useLocation();
-  const { questions, papers, exams } = useData();
-
-  const section = location.pathname.split("/").filter(Boolean)[1] || "dashboard";
-  const [title, description] = navTitle[section] || navTitle.dashboard;
-
-  const totals = useMemo(() => ({
-    teachers: teachers.length,
-    students: students.length,
-    questions: Math.max(principalQuestions.length, questions.length),
-    papers: Math.max(principalPapers.length, papers.length),
-    exams: Math.max(principalExams.length, exams.length),
-  }), [questions.length, papers.length, exams.length]);
-
-  if (section === "teachers") {
-    return (
-      <div>
-        <SectionHeader title={title} description={description} count={teachers.length} />
-        <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <MiniStat icon={Users} label="Total teachers" value="5" />
-          <MiniStat icon={CheckCircle2} label="Active" value="4" />
-          <MiniStat icon={FileText} label="Question papers" value="46" />
-        </div>
-        <DataTable headers={["Teacher", "ID", "Subject", "Papers", "Exams", "Status", ""]}>
-          {teachers.map((teacher) => (
-            <Row key={teacher.id}>
-              <Cell><strong className="block font-bold text-slate-800">{teacher.name}</strong><span className="text-[10px] text-slate-400">{teacher.email}</span></Cell>
-              <Cell className="font-mono text-[10px]">{teacher.id}</Cell>
-              <Cell>{teacher.subject}</Cell>
-              <Cell>{teacher.papers}</Cell>
-              <Cell>{teacher.exams}</Cell>
-              <Cell><Status>{teacher.status}</Status></Cell>
-              <Cell><button className="text-slate-400 hover:text-slate-700"><MoreHorizontal size={17} /></button></Cell>
-            </Row>
-          ))}
-        </DataTable>
-      </div>
-    );
-  }
-
-  if (section === "students") {
-    return (
-      <div>
-        <SectionHeader title={title} description={description} count={students.length} />
-        <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <MiniStat icon={GraduationCap} label="Total students" value="1,248" />
-          <MiniStat icon={Activity} label="Active this week" value="986" />
-          <MiniStat icon={ClipboardCheck} label="Exam attempts" value="8,642" />
-        </div>
-        <DataTable headers={["Student", "ID", "Class", "Exams", "Average", "Status", ""]}>
-          {students.map((student) => (
-            <Row key={student.id}>
-              <Cell><strong className="block font-bold text-slate-800">{student.name}</strong><span className="text-[10px] text-slate-400">{student.email}</span></Cell>
-              <Cell className="font-mono text-[10px]">{student.id}</Cell>
-              <Cell>{student.className}</Cell>
-              <Cell>{student.exams}</Cell>
-              <Cell className="font-bold text-slate-800">{student.average}</Cell>
-              <Cell><Status>{student.status}</Status></Cell>
-              <Cell><button className="text-slate-400 hover:text-slate-700"><MoreHorizontal size={17} /></button></Cell>
-            </Row>
-          ))}
-        </DataTable>
-      </div>
-    );
-  }
-
-  if (section === "exams") {
-    return (
-      <div>
-        <SectionHeader title={title} description={description} count={principalExams.length} />
-        <DataTable headers={["Exam", "Teacher", "Questions", "Attempts", "Date", "Status"]}>
-          {principalExams.map((exam) => (
-            <Row key={exam.id}>
-              <Cell><strong className="block max-w-xs font-bold text-slate-800">{exam.name}</strong><span className="text-[10px] text-slate-400">{exam.id}</span></Cell>
-              <Cell>{exam.teacher}</Cell><Cell>{exam.questions}</Cell><Cell>{exam.attempts}</Cell><Cell>{exam.date}</Cell><Cell><Status>{exam.status}</Status></Cell>
-            </Row>
-          ))}
-        </DataTable>
-      </div>
-    );
-  }
-
-  if (section === "papers") {
-    return (
-      <div>
-        <SectionHeader title={title} description={description} count={principalPapers.length} />
-        <DataTable headers={["Question paper", "Teacher", "Questions", "Duration", "Status", ""]}>
-          {principalPapers.map((paper) => (
-            <Row key={paper.id}>
-              <Cell><strong className="block font-bold text-slate-800">{paper.name}</strong><span className="text-[10px] text-slate-400">{paper.id}</span></Cell>
-              <Cell>{paper.teacher}</Cell><Cell>{paper.questions}</Cell><Cell>{paper.duration}</Cell><Cell><Status>{paper.status}</Status></Cell><Cell><button className="text-slate-400 hover:text-slate-700"><MoreHorizontal size={17} /></button></Cell>
-            </Row>
-          ))}
-        </DataTable>
-      </div>
-    );
-  }
-
-  if (section === "questions") {
-    return (
-      <div>
-        <SectionHeader title={title} description={description} count={principalQuestions.length} />
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-          <div className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
-            <Search size={15} className="text-slate-400" />
-            <input className="w-full bg-transparent text-xs outline-none" placeholder="Search every question..." />
-          </div>
-          <button className="rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600">All subjects</button>
-          <button className="rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600">All difficulty</button>
-        </div>
-        <DataTable headers={["Question", "Subject", "Chapter", "Difficulty", "Created by"]}>
-          {principalQuestions.map((question) => (
-            <Row key={question.id}>
-              <Cell><strong className="block max-w-lg font-semibold leading-5 text-slate-800">{question.text}</strong><span className="font-mono text-[9px] text-slate-400">{question.id}</span></Cell>
-              <Cell>{question.subject}</Cell><Cell>{question.chapter}</Cell><Cell><Difficulty value={question.difficulty} /></Cell><Cell>{question.teacher}</Cell>
-            </Row>
-          ))}
-        </DataTable>
-      </div>
-    );
-  }
-
-  if (section === "analytics") {
-    return <Analytics />;
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-        <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-[.14em] text-green-600">Principal control center</span>
-          <h1 className="mt-2 font-[Manrope] text-3xl font-extrabold tracking-tight text-slate-900">System Overview</h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-500">Everything happening across teachers, students, questions, papers and examinations in one place.</p>
-        </div>
-        <div className="flex items-center gap-2 rounded-xl border border-green-100 bg-green-50 px-3 py-2 text-[10px] font-bold text-green-700"><ShieldCheck size={14} /> Full system visibility</div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <OverviewStat icon={Users} label="Teachers" value="5" detail="4 active" />
-        <OverviewStat icon={GraduationCap} label="Students" value="1,248" detail="986 active" />
-        <OverviewStat icon={BookOpen} label="Questions" value={totals.questions.toLocaleString()} detail="Across all subjects" />
-        <OverviewStat icon={FileText} label="Question papers" value={totals.papers} detail="46 published" />
-        <OverviewStat icon={ClipboardCheck} label="Exams" value={totals.exams} detail="1 live now" />
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.6fr_1fr]">
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <div><h2 className="font-[Manrope] text-sm font-extrabold text-slate-900">Recent examinations</h2><p className="mt-1 text-[10px] text-slate-400">Latest activity across the institution</p></div>
-            <a href="/principal/exams" className="flex items-center gap-1 text-[10px] font-bold text-green-600">View all <ArrowUpRight size={13} /></a>
-          </div>
-          <div>
-            {principalExams.slice(0, 4).map((exam) => (
-              <div key={exam.id} className="flex items-center gap-4 border-b border-slate-100 px-5 py-4 last:border-0">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-50 text-slate-500"><ClipboardCheck size={17} /></div>
-                <div className="min-w-0 flex-1"><strong className="block truncate text-xs font-bold text-slate-800">{exam.name}</strong><span className="mt-1 block text-[10px] text-slate-400">{exam.teacher} · {exam.questions} questions · {exam.attempts} attempts</span></div>
-                <Status>{exam.status}</Status>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-[Manrope] text-sm font-extrabold text-slate-900">System health</h2>
-          <p className="mt-1 text-[10px] text-slate-400">Operational snapshot</p>
-          <div className="mt-5 space-y-4">
-            <Health label="Teacher accounts" value="4 / 5 active" percent={80} />
-            <Health label="Published papers" value="46" percent={92} />
-            <Health label="Exam completion" value="84%" percent={84} />
-            <Health label="Question coverage" value="94%" percent={94} />
-          </div>
-        </section>
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <QuickPanel icon={Users} title="Teachers" value="5" text="Manage teacher accounts and academic activity." href="/principal/teachers" />
-        <QuickPanel icon={GraduationCap} title="Students" value="1,248" text="Review the complete student population." href="/principal/students" />
-        <QuickPanel icon={BookOpen} title="Question Bank" value={totals.questions.toLocaleString()} text="Inspect questions across every subject." href="/principal/questions" />
-      </div>
-    </div>
-  );
-}
-
-function OverviewStat({ icon: Icon, label, value, detail }) {
-  return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-3 grid h-8 w-8 place-items-center rounded-lg bg-green-50 text-green-600"><Icon size={16} /></div><span className="block text-[10px] font-semibold text-slate-400">{label}</span><strong className="mt-1 block font-[Manrope] text-2xl font-extrabold text-slate-900">{value}</strong><small className="mt-1 block text-[9px] text-slate-400">{detail}</small></div>;
-}
-
-function MiniStat({ icon: Icon, label, value }) {
-  return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-green-50 text-green-600"><Icon size={16} /></div><div><span className="block text-[10px] text-slate-400">{label}</span><strong className="text-lg font-extrabold text-slate-900">{value}</strong></div></div></div>;
-}
-
 function Difficulty({ value }) {
   const cls = value === "Easy" ? "bg-green-50 text-green-700" : value === "Hard" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700";
   return <span className={"rounded-full px-2.5 py-1 text-[9px] font-extrabold " + cls}>{value}</span>;
 }
+function SectionHeader({ title, description, count, onRefresh, refreshing }) {
+  return <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="font-[Manrope] text-xl font-extrabold tracking-tight text-slate-900">{title}</h1><p className="mt-1 text-xs text-slate-500">{description}</p></div><div className="flex items-center gap-2">{count !== undefined && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-500">{count} records</span>}{onRefresh && <button onClick={onRefresh} disabled={refreshing} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 hover:border-green-200 hover:text-green-700 disabled:opacity-50"><RefreshCw size={13} className={refreshing ? "animate-spin" : ""}/>Refresh</button>}</div></div>;
+}
+function DataTable({ headers, children, minWidth = "760px" }) { return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="overflow-x-auto"><table className="w-full border-collapse" style={{ minWidth }}><thead><tr className="border-b border-slate-100 bg-slate-50/80">{headers.map((h) => <th key={h} className="px-5 py-3 text-left text-[9px] font-extrabold uppercase tracking-wider text-slate-400">{h}</th>)}</tr></thead><tbody>{children}</tbody></table></div></div>; }
+function Cell({ children, className = "" }) { return <td className={"px-5 py-4 text-xs text-slate-600 " + className}>{children}</td>; }
+function Loading() { return <div className="grid place-items-center rounded-2xl border border-slate-200 bg-white py-20 text-xs text-slate-400">Loading principal data...</div>; }
+function ErrorBox({ message, onRetry }) { return <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-xs text-red-700"><strong className="block">Unable to load this section</strong><span className="mt-1 block">{message}</span><button onClick={onRetry} className="mt-3 rounded-lg bg-white px-3 py-2 font-bold text-red-700 shadow-sm">Try again</button></div>; }
+function SearchBox({ value, onChange, placeholder }) { return <label className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3"><Search size={14} className="text-slate-400"/><input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-transparent text-xs outline-none"/></label>; }
+function MiniStat({ icon: Icon, label, value }) { return <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-green-50 text-green-600"><Icon size={16}/></div><div><span className="block text-[10px] text-slate-400">{label}</span><strong className="text-lg font-extrabold text-slate-900">{value}</strong></div></div></div>; }
 
-function Health({ label, value, percent }) {
-  return <div><div className="mb-1.5 flex justify-between text-[10px]"><span className="font-semibold text-slate-600">{label}</span><strong className="text-slate-800">{value}</strong></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-green-500" style={{ width: percent + "%" }} /></div></div>;
+export default function PrincipalDashboard() {
+  const location = useLocation(); const navigate = useNavigate();
+  const section = location.pathname.split("/").filter(Boolean)[1] || "dashboard";
+  const [data, setData] = useState(null); const [loading, setLoading] = useState(true); const [refreshing, setRefreshing] = useState(false); const [error, setError] = useState("");
+  const [search, setSearch] = useState(""); const [status, setStatus] = useState(""); const [subject, setSubject] = useState(""); const [difficulty, setDifficulty] = useState("");
+  const load = useCallback(async (refresh = false) => {
+    try { setError(""); refresh ? setRefreshing(true) : setLoading(true);
+      let response;
+      if (section === "dashboard") response = await principalApi.overview();
+      else if (section === "teachers") response = await principalApi.teachers({ search, page: 1, limit: 100 });
+      else if (section === "students") response = await principalApi.students({ search, page: 1, limit: 100 });
+      else if (section === "exams") response = await principalApi.exams({ search, status, page: 1, limit: 100 });
+      else if (section === "papers") response = await principalApi.papers({ search, page: 1, limit: 100 });
+      else if (section === "questions") response = await principalApi.questions({ search, subject, difficulty, page: 1, limit: 100 });
+      else response = await principalApi.analytics();
+      setData(response.data?.data || null);
+    } catch (e) { setError(e.response?.data?.message || e.message || "Request failed."); } finally { setLoading(false); setRefreshing(false); }
+  }, [section, search, status, subject, difficulty]);
+
+  useEffect(() => { const timer = setTimeout(() => load(), 250); return () => clearTimeout(timer); }, [load]);
+  useEffect(() => { setSearch(""); setStatus(""); setSubject(""); setDifficulty(""); }, [section]);
+
+  const toggleStatus = async (user) => {
+    try { await principalApi.setUserStatus(user.id, !user.isActive); await load(true); }
+    catch (e) { setError(e.response?.data?.message || "Could not update account status."); }
+  };
+
+  if (loading) return <Loading/>;
+  if (error && !data) return <ErrorBox message={error} onRetry={() => load()}/>;
+  const [title, description] = navTitle[section] || navTitle.dashboard;
+
+  if (section === "teachers") return <Teachers data={data} search={search} setSearch={setSearch} toggleStatus={toggleStatus} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
+  if (section === "students") return <Students data={data} search={search} setSearch={setSearch} toggleStatus={toggleStatus} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
+  if (section === "exams") return <Exams data={data} search={search} setSearch={setSearch} status={status} setStatus={setStatus} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
+  if (section === "papers") return <Papers data={data} search={search} setSearch={setSearch} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
+  if (section === "questions") return <Questions data={data} search={search} setSearch={setSearch} subject={subject} setSubject={setSubject} difficulty={difficulty} setDifficulty={setDifficulty} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
+  if (section === "analytics") return <Analytics data={data} load={() => load(true)} refreshing={refreshing} title={title} description={description}/>;
+  return <Overview data={data} navigate={navigate} load={() => load(true)} refreshing={refreshing}/>;
 }
 
-function QuickPanel({ icon: Icon, title, value, text, href }) {
-  return <a href={href} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-green-200 hover:shadow-md"><div className="flex items-center justify-between"><div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-50 text-slate-500 group-hover:bg-green-50 group-hover:text-green-600"><Icon size={17} /></div><ArrowUpRight size={15} className="text-slate-300 group-hover:text-green-600" /></div><strong className="mt-4 block font-[Manrope] text-xl text-slate-900">{title} · {value}</strong><p className="mt-1 text-xs leading-5 text-slate-500">{text}</p></a>;
-}
-
-function Analytics() {
-  const bars = [54, 68, 62, 82, 74, 91, 84];
-  return <div><SectionHeader title="System Analytics" description="Institution-wide examination activity and engagement." /><div className="grid grid-cols-1 gap-5 lg:grid-cols-3"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2"><div className="flex items-center justify-between"><div><h2 className="font-[Manrope] text-sm font-extrabold text-slate-900">Exam activity</h2><p className="mt-1 text-[10px] text-slate-400">Attempts over the last 7 days</p></div><Activity size={18} className="text-green-600" /></div><div className="mt-7 flex h-52 items-end justify-between gap-3 border-b border-slate-100 pb-0">{bars.map((height, index) => <div key={index} className="flex h-full flex-1 items-end"><div className="w-full rounded-t-lg bg-green-500/80" style={{ height: height + "%" }} /></div>)}</div><div className="mt-3 flex justify-between text-[9px] text-slate-400">{["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((day) => <span key={day}>{day}</span>)}</div></div><div className="space-y-3"><MiniStat icon={ClipboardCheck} label="Total attempts" value="8,642" /><MiniStat icon={Clock3} label="Avg. completion" value="42 min" /><MiniStat icon={AlertCircle} label="Pending reviews" value="18" /></div></div></div>;
-}
+function Toolbar({ children }) { return <div className="mb-4 flex flex-col gap-2 sm:flex-row">{children}</div>; }
+function Teachers({ data, search, setSearch, toggleStatus, load, refreshing, title, description }) { const list=data?.teachers||[]; return <div><SectionHeader title={title} description={description} count={data?.pagination?.total||0} onRefresh={load} refreshing={refreshing}/><div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3"><MiniStat icon={Users} label="Total teachers" value={data?.summary?.totalTeachers||0}/><MiniStat icon={CheckCircle2} label="Active" value={data?.summary?.activeTeachers||0}/><MiniStat icon={FileText} label="Visible on this page" value={list.length}/></div><Toolbar><SearchBox value={search} onChange={setSearch} placeholder="Search teacher name or email..."/></Toolbar><DataTable headers={["Teacher","ID","Subject","Papers","Exams","Status","Action"]}>{list.map((t)=><tr key={t.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"><Cell><strong className="block font-bold text-slate-800">{t.name}</strong><span className="text-[10px] text-slate-400">{t.email}</span></Cell><Cell className="font-mono text-[10px]">{t.teacherId}</Cell><Cell>{t.subject}</Cell><Cell>{t.papers}</Cell><Cell>{t.exams}</Cell><Cell><Status>{t.status}</Status></Cell><Cell><button onClick={()=>toggleStatus(t)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[9px] font-bold text-slate-500 hover:border-green-200 hover:text-green-700"><Power size={12}/>{t.isActive?"Deactivate":"Activate"}</button></Cell></tr>)}</DataTable>{!list.length&&<Empty text="No teachers found."/>}</div>; }
+function Students({ data, search, setSearch, toggleStatus, load, refreshing, title, description }) { const list=data?.students||[]; return <div><SectionHeader title={title} description={description} count={data?.pagination?.total||0} onRefresh={load} refreshing={refreshing}/><div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3"><MiniStat icon={GraduationCap} label="Total students" value={data?.summary?.totalStudents||0}/><MiniStat icon={Users} label="Active" value={data?.summary?.activeStudents||0}/><MiniStat icon={ClipboardCheck} label="Exam attempts" value={data?.summary?.totalAttempts||0}/></div><Toolbar><SearchBox value={search} onChange={setSearch} placeholder="Search name, email or student ID..."/></Toolbar><DataTable headers={["Student","ID","Class","Exams","Average","Status","Action"]}>{list.map((s)=><tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"><Cell><strong className="block font-bold text-slate-800">{s.name}</strong><span className="text-[10px] text-slate-400">{s.email}</span></Cell><Cell className="font-mono text-[10px]">{s.studentId}</Cell><Cell>{s.className}</Cell><Cell>{s.exams}<span className="ml-1 text-[10px] text-slate-400">({s.attempts})</span></Cell><Cell className="font-bold text-slate-800">{s.average}%</Cell><Cell><Status>{s.status}</Status></Cell><Cell><button onClick={()=>toggleStatus(s)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[9px] font-bold text-slate-500 hover:border-green-200 hover:text-green-700"><Power size={12}/>{s.isActive?"Deactivate":"Activate"}</button></Cell></tr>)}</DataTable>{!list.length&&<Empty text="No students found."/>}</div>; }
+function Exams({ data, search, setSearch, status, setStatus, load, refreshing, title, description }) { const list=data?.exams||[]; return <div><SectionHeader title={title} description={description} count={data?.pagination?.total||0} onRefresh={load} refreshing={refreshing}/><Toolbar><SearchBox value={search} onChange={setSearch} placeholder="Search exams..."/><select value={status} onChange={e=>setStatus(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none"><option value="">All statuses</option><option>Draft</option><option>Live</option><option>Closed</option></select></Toolbar><DataTable headers={["Exam","Teacher","Questions","Attempts","Date","Status"]}>{list.map(e=><tr key={e.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"><Cell><strong className="block max-w-xs font-bold text-slate-800">{e.name}</strong><span className="text-[10px] text-slate-400">{e.id}</span></Cell><Cell>{e.teacher}</Cell><Cell>{e.questions}</Cell><Cell>{e.attempts}</Cell><Cell>{new Date(e.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</Cell><Cell><Status>{e.status}</Status></Cell></tr>)}</DataTable>{!list.length&&<Empty text="No exams found."/>}</div>; }
+function Papers({ data, search, setSearch, load, refreshing, title, description }) { const list=data?.papers||[]; return <div><SectionHeader title={title} description={description} count={data?.pagination?.total||0} onRefresh={load} refreshing={refreshing}/><Toolbar><SearchBox value={search} onChange={setSearch} placeholder="Search question papers..."/></Toolbar><DataTable headers={["Question paper","Teacher","Questions","Duration","Subject","Status"]}>{list.map(p=><tr key={p.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"><Cell><strong className="block font-bold text-slate-800">{p.name}</strong><span className="text-[10px] text-slate-400">{p.id}</span></Cell><Cell>{p.teacher}</Cell><Cell>{p.questions}</Cell><Cell><Clock3 size={13} className="mr-1 inline"/> {p.duration} min</Cell><Cell>{p.subject}</Cell><Cell><Status>{p.status}</Status></Cell></tr>)}</DataTable>{!list.length&&<Empty text="No question papers found."/>}</div>; }
+function Questions({ data, search, setSearch, subject, setSubject, difficulty, setDifficulty, load, refreshing, title, description }) { const list=data?.questions||[]; const subjects=data?.subjects||[]; return <div><SectionHeader title={title} description={description} count={data?.pagination?.total||0} onRefresh={load} refreshing={refreshing}/><Toolbar><SearchBox value={search} onChange={setSearch} placeholder="Search question, chapter or creator..."/><select value={subject} onChange={e=>setSubject(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none"><option value="">All subjects</option>{subjects.map(s=><option key={s}>{s}</option>)}</select><select value={difficulty} onChange={e=>setDifficulty(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none"><option value="">All difficulty</option><option>Easy</option><option>Medium</option><option>Hard</option></select></Toolbar><DataTable headers={["Question","Subject","Chapter","Difficulty","Created by"]} minWidth="900px">{list.map(q=><tr key={q.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"><Cell><strong className="block max-w-lg font-semibold leading-5 text-slate-800">{q.text}</strong><span className="mt-1 block text-[10px] text-slate-400">{(q.options||[]).map(o=>o.text||o).join(" · ")}</span></Cell><Cell>{q.subject}</Cell><Cell>{q.chapter}</Cell><Cell><Difficulty value={q.difficulty}/></Cell><Cell>{q.createdBy}</Cell></tr>)}</DataTable>{!list.length&&<Empty text="No questions found."/>}</div>; }
+function Analytics({ data, load, refreshing, title, description }) { const activity=data?.activity||[]; const max=Math.max(...activity.map(x=>x.attempts),1); return <div><SectionHeader title={title} description={description} onRefresh={load} refreshing={refreshing}/><div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3"><MiniStat icon={ClipboardCheck} label="Total attempts" value={data?.totals?.attempts||0}/><MiniStat icon={Activity} label="Average score" value={(data?.totals?.averagePercent||0)+"%"}/><MiniStat icon={Clock3} label="Pending reviews" value={data?.totals?.pendingReviews||0}/></div><div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.6fr_1fr]"><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-900">Exam activity</h2><p className="mt-1 text-[10px] text-slate-400">Attempts over the last 7 days</p></div><Activity size={17} className="text-green-600"/></div><div className="mt-8 flex h-56 items-end gap-3 border-b border-slate-100">{activity.map((x,i)=><div key={x.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><div className="flex h-full w-full items-end"><div title={x.attempts+" attempts"} className="w-full rounded-t-lg bg-green-500/80" style={{height: Math.max((x.attempts/max)*100, x.attempts?5:0)+"%"}}/></div><span className="text-[9px] text-slate-400">{x.label}</span></div>)}</div></section><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-extrabold text-slate-900">Exam status</h2><p className="mt-1 text-[10px] text-slate-400">Current platform distribution</p><div className="mt-6 space-y-4">{Object.entries(data?.examStatuses||{}).map(([key,value])=><div key={key} className="flex items-center justify-between"><Status>{key}</Status><strong className="text-sm text-slate-800">{value}</strong></div>)}{!Object.keys(data?.examStatuses||{}).length&&<span className="text-xs text-slate-400">No exams yet.</span>}</div></section></div></div>; }
+function Overview({ data, navigate, load, refreshing }) { const c=data?.counts||{}; return <div className="space-y-6"><div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><span className="text-[10px] font-extrabold uppercase tracking-[.14em] text-green-600">Principal control center</span><h1 className="mt-2 font-[Manrope] text-3xl font-extrabold tracking-tight text-slate-900">System Overview</h1><p className="mt-2 max-w-2xl text-sm text-slate-500">Live information across teachers, students, questions, papers and examinations.</p></div><div className="flex items-center gap-2"><button onClick={load} disabled={refreshing} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-bold text-slate-600"><RefreshCw size={13} className={refreshing?"animate-spin":""}/>Refresh</button><span className="flex items-center gap-2 rounded-xl border border-green-100 bg-green-50 px-3 py-2 text-[10px] font-bold text-green-700"><ShieldCheck size={14}/> Full system visibility</span></div></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-5"><MiniStat icon={Users} label="Teachers" value={c.teachers||0}/><MiniStat icon={GraduationCap} label="Students" value={c.students||0}/><MiniStat icon={BookOpen} label="Questions" value={c.questions||0}/><MiniStat icon={FileText} label="Question papers" value={c.papers||0}/><MiniStat icon={ClipboardCheck} label="Exams" value={c.exams||0}/></div><div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.6fr_1fr]"><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><div><h2 className="text-sm font-extrabold text-slate-900">Recent examinations</h2><p className="mt-1 text-[10px] text-slate-400">Latest activity across the institution</p></div><button onClick={()=>navigate("/principal/exams")} className="flex items-center gap-1 text-[10px] font-bold text-green-600">View all <ArrowUpRight size={13}/></button></div>{(data?.recentExams||[]).map(e=><div key={e.id} className="flex items-center gap-4 border-b border-slate-100 px-5 py-4 last:border-0"><div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-50 text-slate-500"><ClipboardCheck size={17}/></div><div className="min-w-0 flex-1"><strong className="block truncate text-xs font-bold text-slate-800">{e.name}</strong><span className="mt-1 block text-[10px] text-slate-400">{e.teacher} · {e.questions} questions · {e.attempts} attempts</span></div><Status>{e.status}</Status></div>)}{!(data?.recentExams||[]).length&&<Empty text="No examinations yet."/>}</section><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-extrabold text-slate-900">System health</h2><p className="mt-1 text-[10px] text-slate-400">Current live account and exam indicators</p><div className="mt-5 space-y-4"><Health label="Active teachers" value={(data?.active?.teachers||0)+" / "+(c.teachers||0)} percent={c.teachers?Math.round((data.active.teachers/c.teachers)*100):0}/><Health label="Active students" value={(data?.active?.students||0)+" / "+(c.students||0)} percent={c.students?Math.round((data.active.students/c.students)*100):0}/><Health label="Published papers" value={data?.publishedPapers||0} percent={c.papers?Math.round((data.publishedPapers/c.papers)*100):0}/><Health label="Live exams" value={data?.liveExams||0} percent={c.exams?Math.round((data.liveExams/c.exams)*100):0}/></div></section></div><div className="grid grid-cols-1 gap-4 md:grid-cols-3"><QuickPanel icon={Users} title="Teachers" value={c.teachers||0} text="Manage teacher accounts and status." onClick={()=>navigate("/principal/teachers")}/><QuickPanel icon={GraduationCap} title="Students" value={c.students||0} text="Review the complete student population." onClick={()=>navigate("/principal/students")}/><QuickPanel icon={BookOpen} title="Question Bank" value={c.questions||0} text="Inspect every question across subjects." onClick={()=>navigate("/principal/questions")}/></div></div>; }
+function Health({label,value,percent}){return <div><div className="mb-1.5 flex justify-between text-[10px]"><span className="font-semibold text-slate-600">{label}</span><strong className="text-slate-800">{value}</strong></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-green-500" style={{width:Math.min(percent,100)+"%"}}/></div></div>;}
+function QuickPanel({icon:Icon,title,value,text,onClick}){return <button onClick={onClick} className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-green-200 hover:shadow-md"><div className="flex items-center justify-between"><div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-50 text-slate-500 group-hover:bg-green-50 group-hover:text-green-600"><Icon size={17}/></div><ArrowUpRight size={15} className="text-slate-300 group-hover:text-green-600"/></div><strong className="mt-4 block text-xl text-slate-900">{title} · {value}</strong><p className="mt-1 text-xs leading-5 text-slate-500">{text}</p></button>;}
+function Empty({text}){return <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-12 text-center text-xs text-slate-400">{text}</div>;}
